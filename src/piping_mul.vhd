@@ -32,6 +32,11 @@ entity piping_mul is
 end entity;
 
 architecture RTL of piping_mul is
+
+    constant NN: positive := clog2(N);
+
+
+
     signal c_val: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 
 
@@ -51,7 +56,12 @@ architecture RTL of piping_mul is
     end function;
 
 
-    signal selected_flag: std_logic_vector(N-1 downto 0):="10100101";
+    -- 関数から両方returnしたいけど１つしか返せないので結合しalias。
+    -- signal selected_flag: std_logic_vector(N-1 downto 0):="10100101";
+    -- signal last_sel: std_logic_vector(NN-1 to 0);
+    signal select_combination: std_logic_vector(N+NN-1 downto 0);
+    alias selected_flag: std_logic_vector(N-1 downto 0) is select_combination(N-1 downto 0);
+    alias last_sel: std_logic_vector(NN-1 downto 0) is select_combination(N+NN-1 downto N);
 
     signal mul_in_a: slv_array_t(0 to MUL_NUM-1)(A_DTW-1 downto 0);
     signal mul_in_b: slv_array_t(0 to MUL_NUM-1)(B_DTW-1 downto 0);
@@ -69,8 +79,54 @@ architecture RTL of piping_mul is
         return ret;
     end function;
 
+    signal tran_ok: sl_array_t(0 to N-1);
+
+
+    function next_select(now_select_combination: std_logic_vector; tran_ok: sl_array_t) return std_logic_vector is
+        alias now_selected_flag: std_logic_vector(N-1 downto 0) is now_select_combination(N-1 downto 0);
+        alias now_last_sel: std_logic_vector(NN-1 downto 0) is now_select_combination(N+NN-1 downto N);
+        variable next_select_combination: std_logic_vector(N+NN-1 downto 0);
+        alias next_selected_flag: std_logic_vector(N-1 downto 0) is next_select_combination(N-1 downto 0);
+        alias next_last_sel: std_logic_vector(NN-1 downto 0) is next_select_combination(N+NN-1 downto N);
+
+        variable idx: integer;
+        variable choice_num: integer:= 0;
+    begin
+        next_last_sel := now_last_sel;
+        for i in 0 to N-1 loop
+            idx := (i + to_integer(unsigned(now_last_sel)) + 1) mod N;
+            if choice_num < MUL_NUM then
+                if  tran_ok(idx)='1' then
+                    next_selected_flag(idx) := '1';
+                    next_last_sel := std_logic_vector(to_unsigned(idx, NN));
+                    choice_num := choice_num + 1;
+                else
+                    next_selected_flag(idx) := '0';
+                end if;
+            else
+                next_selected_flag(idx) := '0';
+            end if;
+        end loop;
+        return next_select_combination;
+    end function;
 begin
 
+    tran_ok <= i_valid and o_ready;
+
+    process (clk, rstn) begin
+        if rstn='0' then
+            selected_flag <= (others=>'0');
+            last_sel <= std_logic_vector(to_unsigned(N-1, NN)); -- for first 0
+            -- for i in 0 to N-1 loop
+            --     selected_flag(i) <= '1' when i<MUL_NUM else '0';
+            -- end loop;
+            -- last_sel <= (others=>'0');
+        elsif rising_edge(clk) then
+            select_combination <= next_select(select_combination, tran_ok);
+        end if;
+    end process;
+
+    --[TODO] mul_in_a is latch
     process (all)begin
         for i in 0 to N-1 loop
             if selected_flag(i)='1' then

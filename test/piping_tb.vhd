@@ -15,19 +15,19 @@ entity piping_tb is
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
         C_DTW: positive:= 8;
-        SFT_NUM: natural:= 1;
+        SFT_NUM: natural:= 0;
         MUL_NUM: positive:= 4
     );
 end entity;
 
 architecture SIM of piping_tb is
     signal clk, rstn: std_logic;
-    signal i_ready: sl_array_t(0 to N-1);
-    signal i_valid: sl_array_t(0 to N-1);
-    signal o_ready: sl_array_t(0 to N-1);
-    signal o_valid: sl_array_t(0 to N-1);
-    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0);
-    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0);
+    signal i_ready: sl_array_t(0 to N-1):=(others=>'0');
+    signal i_valid: sl_array_t(0 to N-1):=(others=>'0');
+    signal o_ready: sl_array_t(0 to N-1):=(others=>'0');
+    signal o_valid: sl_array_t(0 to N-1):=(others=>'0');
+    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
     signal c: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 begin
     piping_mul: entity work.piping_mul generic map(
@@ -55,12 +55,16 @@ begin
     begin
         print("Hello world!");
 
+        make_reset(rstn, clk, 5); -- reset
+        wait_clock(clk, 5); -- wait clock rising, 5times
+
         for i in 0 to N-1 loop
+            i_valid(i) <= '1';
+            o_ready(i) <= '1';
             a(i) <= std_logic_vector(to_signed(i,  A_DTW));
             b(i) <= std_logic_vector(to_signed(i,  A_DTW));
         end loop;
 
-        make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
         for i in 0 to N-1 loop
@@ -69,6 +73,7 @@ begin
 
         print("Finish @" + now); -- show Simulation time
         finish(0);
+        wait;
     end process;
 
 end architecture;

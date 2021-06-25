@@ -18,3 +18,5 @@ _*
 transcript
 
 workspace.code-workspace
+test/tmp.vcd
+model_sim/*

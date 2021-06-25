@@ -32,5 +32,6 @@ fi
 vcom -allowProtectedBeforeBody -2008 ${libfiles} ${files[@]}
 
 ## Sim
-vsim -c ${top} -do "run -all; exit;"
+vsim -c ${top} -do "vcd file tmp.vcd; vcd add *; run -all; exit;"
+## vsim -c ${top} -do "run -all; exit;"
 

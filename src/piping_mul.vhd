@@ -60,8 +60,11 @@ architecture RTL of piping_mul is
     -- signal selected_flag: std_logic_vector(N-1 downto 0):="10100101";
     -- signal last_sel: std_logic_vector(NN-1 to 0);
     signal select_combination: std_logic_vector(N+NN-1 downto 0);
+    signal select_combination_pre: std_logic_vector(N+NN-1 downto 0);
     alias selected_flag: std_logic_vector(N-1 downto 0) is select_combination(N-1 downto 0);
     alias last_sel: std_logic_vector(NN-1 downto 0) is select_combination(N+NN-1 downto N);
+    alias selected_flag_pre: std_logic_vector(N-1 downto 0) is select_combination_pre(N-1 downto 0);
+    alias last_sel_pre: std_logic_vector(NN-1 downto 0) is select_combination_pre(N+NN-1 downto N);
 
     signal mul_in_a: slv_array_t(0 to MUL_NUM-1)(A_DTW-1 downto 0);
     signal mul_in_b: slv_array_t(0 to MUL_NUM-1)(B_DTW-1 downto 0);
@@ -78,6 +81,23 @@ architecture RTL of piping_mul is
         assert ret < MUL_NUM report "Error selcted_flag:" & to_str(sel, BIN) severity ERROR;
         return ret;
     end function;
+
+    function sel_num2(num: integer; sel: std_logic_vector) return integer is
+        variable inc: integer:=0;
+        variable ret: integer;
+    begin
+        ret := num; -- default
+        for i in 0 to N-1 loop
+            if sel(i)='1' then
+                if inc = num then
+                    ret := i;
+                end if;
+                inc := inc + 1;
+            end if;
+        end loop;
+        return ret;
+    end function;
+
 
     signal tran_ok: sl_array_t(0 to N-1);
 
@@ -112,28 +132,33 @@ architecture RTL of piping_mul is
 begin
 
     tran_ok <= i_valid and o_ready;
+    select_combination <= next_select(select_combination_pre, tran_ok);
 
     process (clk, rstn) begin
         if rstn='0' then
-            selected_flag <= (others=>'0');
-            last_sel <= std_logic_vector(to_unsigned(N-1, NN)); -- for first 0
-            -- for i in 0 to N-1 loop
-            --     selected_flag(i) <= '1' when i<MUL_NUM else '0';
-            -- end loop;
-            -- last_sel <= (others=>'0');
+            selected_flag_pre <= (others=>'0');
+            last_sel_pre <= std_logic_vector(to_unsigned(N-1, NN)); -- for first 0
         elsif rising_edge(clk) then
-            select_combination <= next_select(select_combination, tran_ok);
+            select_combination_pre <= select_combination;
         end if;
     end process;
 
     --[TODO] mul_in_a is latch
+    -- process (all)begin
+    --     for i in 0 to N-1 loop
+    --         if selected_flag(i)='1' then
+    --             print("SEL" / i / sel_num(i, selected_flag));
+    --             mul_in_a(sel_num(i, selected_flag)) <= a(i);
+    --             mul_in_b(sel_num(i, selected_flag)) <= b(i);
+    --         end if;
+    --     end loop;
+    -- end process;
+
     process (all)begin
-        for i in 0 to N-1 loop
-            if selected_flag(i)='1' then
-                print("SEL" / i / sel_num(i, selected_flag));
-                mul_in_a(sel_num(i, selected_flag)) <= a(i);
-                mul_in_b(sel_num(i, selected_flag)) <= b(i);
-            end if;
+        for i in 0 to MUL_NUM-1 loop
+            -- print("SEL" / i / selected_flag / sel_num2(i, selected_flag));
+            mul_in_a(i) <= a(sel_num2(i, selected_flag));
+            mul_in_b(i) <= b(sel_num2(i, selected_flag));
         end loop;
     end process;
 

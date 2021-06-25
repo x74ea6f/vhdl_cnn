@@ -68,8 +68,19 @@ begin
         wait_clock(clk, 5); -- wait clock rising, 5times
 
         for i in 0 to N-1 loop
+            assert c(i)=std_logic_vector(to_signed(i**2, C_DTW)) report "Compare Error" severity Error;
             print(to_str(c(i)));
         end loop;
+
+        for i in 0 to N-1 loop
+            i_valid(i) <= '0';
+            o_ready(i) <= '0';
+        end loop;
+        wait_clock(clk, 5); -- wait clock rising, 5times
+
+
+
+
 
         print("Finish @" + now); -- show Simulation time
         finish(0);

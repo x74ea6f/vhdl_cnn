@@ -3,7 +3,6 @@ library ieee;
 library std;
 library work;
 use ieee.std_logic_1164.all;
-use ieee.math_real.all;
 use ieee.numeric_std.all;
 use std.env.finish;
 use work.str_lib.all;
@@ -11,26 +10,29 @@ use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
 
-entity piping_tb2 is
+entity piping_mul_tb1 is
     generic(
         N: positive:= 8;
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
-        C_DTW: positive:= 14;
-        SFT_NUM: natural:= 2;
+        C_DTW: positive:= 8;
+        SFT_NUM: natural:= 0;
         MUL_NUM: positive:= 4
     );
 end entity;
 
-architecture SIM of piping_tb2 is
+architecture SIM of piping_mul_tb1 is
+    constant ZERO_A_DTW: std_logic_vector(A_DTW-1 downto 0) := (others=>'0');
+    constant ZERO_B_DTW: std_logic_vector(B_DTW-1 downto 0) := (others=>'0');
+
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
     signal i_ready: sl_array_t(0 to N-1):=(others=>'0');
     signal i_valid: sl_array_t(0 to N-1):=(others=>'0');
     signal o_ready: sl_array_t(0 to N-1):=(others=>'0');
     signal o_valid: sl_array_t(0 to N-1):=(others=>'0');
-    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>ZERO_A_DTW);
+    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>ZERO_B_DTW);
     signal c: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 
     signal exp: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
@@ -61,21 +63,12 @@ begin
         function tmp(a,b: std_logic_vector) return std_logic_vector is
             variable aa: integer;
             variable bb: integer;
-            variable cc_real: real;
             variable cc: integer;
             variable ret: std_logic_vector(C_DTW-1 downto 0);
         begin
             aa := to_integer(signed(a));
             bb := to_integer(signed(b));
             cc := aa * bb;
-            if SFT_NUM/=0 then
-                cc_real := real(cc) / (2.0**SFT_NUM);
-                cc_real := floor(real(cc) / (2.0**SFT_NUM) + 0.5);
-                -- cc_real := round(real(cc) / (2.0**SFT_NUM));
-                cc := integer(cc_real);
-            end if;
-            cc := minimum(cc, 2**(C_DTW-1)-1);
-            cc := maximum(cc, -2**(C_DTW-1));
             ret := std_logic_vector(to_signed(cc, C_DTW));
             return ret;
         end function;
@@ -94,25 +87,22 @@ begin
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        for k in 0 to 100 loop
-            for i in 0 to N-1 loop
-                if o_valid(i)='1' then
-                    check(c(i), exp(i), "DATA" + i, True);
-                end if;
-            end loop;
-
-            for i in 0 to N-1 loop
-                i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                a(i) <= rand_slv(A_DTW);
-                b(i) <= rand_slv(B_DTW);
-            end loop;
-
-            wait_clock(clk, 1);
-            wait for 1 ns;
+        for i in 0 to N-1 loop
+            i_valid(i) <= '1';
+            o_ready(i) <= '1';
+            a(i) <= std_logic_vector(to_signed(i,  A_DTW));
+            b(i) <= std_logic_vector(to_signed(i,  A_DTW));
         end loop;
 
         wait_clock(clk, 5); -- wait clock rising, 5times
+
+        for i in 0 to N-1 loop
+            i_valid(i) <= '0';
+            o_ready(i) <= '0';
+            check(c(i), exp(i), "DATA" + i, True);
+        end loop;
+        wait_clock(clk, 5); -- wait clock rising, 5times
+
         print("Finish @" + now); -- show Simulation time
         finish(0);
         wait;

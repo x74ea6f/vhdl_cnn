@@ -7,6 +7,7 @@ package piping_pkg is
     type slv_array_t is array(natural range <>) of std_logic_vector;
 
     function "and"(l,r: sl_array_t) return sl_array_t;
+
 end package;
 
 

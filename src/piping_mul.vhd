@@ -1,11 +1,11 @@
 -- 乗算
 library ieee;
 library work;
+use work.piping_pkg.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.numeric_lib.all;
-use work.str_lib.all;
-use work.piping_pkg.all;
+-- use work.str_lib.all;
 
 entity piping_mul is
     generic(
@@ -132,7 +132,8 @@ architecture RTL of piping_mul is
                 ret := ret + 1;
             end if;
         end loop;
-        assert ret < MUL_NUM report "Error selcted_flag:" & to_str(sel, BIN) severity ERROR;
+
+        -- assert ret < MUL_NUM report "Error selcted_flag:" & to_str(sel, BIN) severity ERROR;
         return ret;
     end function;
 

@@ -11,18 +11,18 @@ use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
 
-entity piping_mul_tb2 is
+entity piping_add_tb1 is
     generic(
         N: positive:= 8;
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
-        C_DTW: positive:= 14;
-        MUL_NUM: positive:= 4;
-        SFT_NUM: natural:= 2
+        C_DTW: positive:= 8;
+        CAL_NUM: positive:= 4;
+        SFT_NUM: natural:= 1
     );
 end entity;
 
-architecture SIM of piping_mul_tb2 is
+architecture SIM of piping_add_tb1 is
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
     signal i_ready: sl_array_t(0 to N-1):=(others=>'0');
@@ -35,11 +35,11 @@ architecture SIM of piping_mul_tb2 is
 
     signal exp: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 begin
-    piping_mul: entity work.piping_mul generic map(
+    piping_add: entity work.piping_add generic map(
         A_DTW=>A_DTW,
         B_DTW=>B_DTW,
         C_DTW=>C_DTW,
-        MUL_NUM=>MUL_NUM,
+        CAL_NUM=>CAL_NUM,
         SFT_NUM=>SFT_NUM
     )port map(
         clk => clk,
@@ -67,7 +67,7 @@ begin
         begin
             aa := to_integer(signed(a));
             bb := to_integer(signed(b));
-            cc := aa * bb;
+            cc := aa + bb;
             if SFT_NUM/=0 then
                 cc_real := real(cc) / (2.0**SFT_NUM);
                 cc_real := floor(real(cc) / (2.0**SFT_NUM) + 0.5);

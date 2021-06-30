@@ -17,8 +17,8 @@ entity piping_mul_tb2 is
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
         C_DTW: positive:= 14;
-        SFT_NUM: natural:= 2;
-        MUL_NUM: positive:= 4
+        MUL_NUM: positive:= 4;
+        SFT_NUM: natural:= 2
     );
 end entity;
 
@@ -39,8 +39,8 @@ begin
         A_DTW=>A_DTW,
         B_DTW=>B_DTW,
         C_DTW=>C_DTW,
-        SFT_NUM=>SFT_NUM,
-        MUL_NUM=>MUL_NUM
+        MUL_NUM=>MUL_NUM,
+        SFT_NUM=>SFT_NUM
     )port map(
         clk => clk,
         rstn => rstn,
@@ -58,7 +58,7 @@ begin
 
     -- make expected data
     process (all)
-        function tmp(a,b: std_logic_vector) return std_logic_vector is
+        function cal_exp(a,b: std_logic_vector) return std_logic_vector is
             variable aa: integer;
             variable bb: integer;
             variable cc_real: real;
@@ -81,8 +81,8 @@ begin
         end function;
     begin
         for i in 0 to N-1 loop
-            if i_valid(i)='1' and o_ready(i)='1' then
-                exp(i) <= tmp(a(i), b(i));
+            if i_valid(i)='1' and i_ready(i)='1' then
+                exp(i) <= cal_exp(a(i), b(i));
             end if;
         end loop;
     end process;
@@ -116,6 +116,15 @@ begin
         print("Finish @" + now); -- show Simulation time
         finish(0);
         wait;
+    end process;
+
+
+    process(all) begin
+        if(falling_edge(o_valid(0))=True) then
+            assert o_ready(0)='1'
+            report "Valid Error"
+            severity Error;
+        end if;
     end process;
 
 end architecture;

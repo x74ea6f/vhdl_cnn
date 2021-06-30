@@ -16,8 +16,8 @@ entity piping_mul_tb1 is
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
         C_DTW: positive:= 8;
-        SFT_NUM: natural:= 0;
-        MUL_NUM: positive:= 4
+        MUL_NUM: positive:= 4;
+        SFT_NUM: natural:= 0
     );
 end entity;
 
@@ -41,8 +41,8 @@ begin
         A_DTW=>A_DTW,
         B_DTW=>B_DTW,
         C_DTW=>C_DTW,
-        SFT_NUM=>SFT_NUM,
-        MUL_NUM=>MUL_NUM
+        MUL_NUM=>MUL_NUM,
+        SFT_NUM=>SFT_NUM
     )port map(
         clk => clk,
         rstn => rstn,

@@ -133,13 +133,14 @@ architecture RTL of piping_mul is
             end if;
         end loop;
 
-        -- assert ret < MUL_NUM report "Error selcted_flag:" & to_str(sel, BIN) severity ERROR;
+        assert ret < MUL_NUM report "Error selcted_flag:" & integer'image(to_integer(unsigned(sel))) severity ERROR;
         return ret;
     end function;
 
 begin
 
-    tran_ok <= i_valid and o_ready;
+    tran_ok <= i_valid and (not o_valid);
+    -- tran_ok <= i_valid and o_ready;
     select_combination <= next_select(select_combination_pre, tran_ok);
 
     process (clk, rstn) begin
@@ -180,14 +181,29 @@ begin
     process (clk, rstn) begin
         if rstn='0' then
             c_val <= (others=>(others => '0'));
+            o_valid_val <= (others=>'0');
         elsif rising_edge(clk) then
             for i in 0 to N-1 loop
                 if selected_flag(i)='1' then
                     c_val(i) <= mul_out(sel_num(i, selected_flag));
+                    o_valid_val(i) <= '1';
+                elsif o_ready(i)='1' then
+                    o_valid_val(i) <= '0';
                 end if;
             end loop;
         end if;
     end process;
+
+    process (all) begin
+        if rising_edge(clk) then
+            for i in 0 to N-1 loop
+                assert not(selected_flag(i)='1' and o_valid_val(i)='1')
+                report "Selected Error, Buffer Overwrite."
+                severity Error;
+            end loop;
+        end if;
+    end process;
+
 
     c <= c_val;
 
@@ -198,16 +214,6 @@ begin
     end process;
 
     i_ready <= i_ready_val;
-
-    process (clk, rstn) begin
-        if rstn='0' then
-            o_valid_val <= (others=>'0');
-        elsif rising_edge(clk) then
-            for i in 0 to N-1 loop
-                o_valid_val(i) <= selected_flag(i);
-            end loop;
-        end if;
-    end process;
 
     o_valid <= o_valid_val;
 

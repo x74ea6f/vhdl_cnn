@@ -155,17 +155,6 @@ begin
         end if;
     end process;
 
-    --[TODO] cal_in_a is latch
-    -- process (all)begin
-    --     for i in 0 to N-1 loop
-    --         if selected_flag(i)='1' then
-    --             print("SEL" / i / sel_num(i, selected_flag));
-    --             cal_in_a(sel_num(i, selected_flag)) <= a(i);
-    --             cal_in_b(sel_num(i, selected_flag)) <= b(i);
-    --         end if;
-    --     end loop;
-    -- end process;
-
     process (all)begin
         for i in 0 to CAL_NUM-1 loop
             -- print("SEL" / i / selected_flag / sel_num_in(i, selected_flag));

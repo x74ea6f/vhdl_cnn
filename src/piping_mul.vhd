@@ -13,7 +13,7 @@ entity piping_mul is
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
         C_DTW: positive:= 8;
-        MUL_NUM: positive:= 4;
+        CAL_NUM: positive:= 4;
         SFT_NUM: natural := 4
     );
     port(
@@ -39,13 +39,13 @@ architecture RTL of piping_mul is
     signal i_ready_val: sl_array_t(0 to N-1);
     signal o_valid_val: sl_array_t(0 to N-1);
 
-    signal mul_in_a: slv_array_t(0 to MUL_NUM-1)(A_DTW-1 downto 0);
-    signal mul_in_b: slv_array_t(0 to MUL_NUM-1)(B_DTW-1 downto 0);
-    signal mul_out: slv_array_t(0 to MUL_NUM-1)(C_DTW-1 downto 0);
+    signal cal_in_a: slv_array_t(0 to CAL_NUM-1)(A_DTW-1 downto 0);
+    signal cal_in_b: slv_array_t(0 to CAL_NUM-1)(B_DTW-1 downto 0);
+    signal cal_out: slv_array_t(0 to CAL_NUM-1)(C_DTW-1 downto 0);
 
     -- 計算メイン処理
     -- 乗算・丸め・クリップ
-    function mul_main(a, b: std_logic_vector) return std_logic_vector is
+    function cal_main(a, b: std_logic_vector) return std_logic_vector is
         variable v_a: signed(A_DTW-1 downto 0);
         variable v_b: signed(A_DTW-1 downto 0);
         variable v_mul: signed(A_DTW+B_DTW-1 downto 0);
@@ -74,7 +74,7 @@ architecture RTL of piping_mul is
     signal tran_ok: sl_array_t(0 to N-1);
 
     -- いわゆるアービター
-    -- 現在の最終番号から走査して、trans_okなところをMUL_NUM個選択。
+    -- 現在の最終番号から走査して、trans_okなところをCAL_NUM個選択。
     function next_select(now_select_combination: std_logic_vector; tran_ok: sl_array_t) return std_logic_vector is
         alias now_selected_flag: std_logic_vector(N-1 downto 0) is now_select_combination(N-1 downto 0);
         alias now_last_sel: std_logic_vector(NN-1 downto 0) is now_select_combination(N+NN-1 downto N);
@@ -88,7 +88,7 @@ architecture RTL of piping_mul is
         next_last_sel := now_last_sel;
         for i in 0 to N-1 loop
             idx := (i + to_integer(unsigned(now_last_sel)) + 1) mod N;
-            if choice_num < MUL_NUM then
+            if choice_num < CAL_NUM then
                 if  tran_ok(idx)='1' then
                     next_selected_flag(idx) := '1';
                     next_last_sel := std_logic_vector(to_unsigned(idx, NN));
@@ -102,7 +102,8 @@ architecture RTL of piping_mul is
         end loop;
         return next_select_combination;
     end function;
-    -- MUL(num)に入力の何番目を接続するか?
+
+    -- CAL(num)に入力の何番目を接続するか?
     -- selのnum番目の1は、何ビット目か?(ret=0~N-1)
     -- eg: sel=00110011: num,ret=0,0; 1,1; 2,4; 3,5;
     function sel_num_in(constant num: integer; sel: std_logic_vector) return integer is
@@ -121,7 +122,7 @@ architecture RTL of piping_mul is
         return ret;
     end function;
 
-    -- MUL(num)に出力の何番目を接続するか?
+    -- CAL(num)に出力の何番目を接続するか?
     -- selのnumビット目は、何番目の1か?(ret=0~N-1)
     -- eg: sel=00110011: num,ret=0,0; 1,1; 4,2; 5,3;
     function sel_num(constant num: integer; sel: std_logic_vector) return integer is
@@ -133,7 +134,7 @@ architecture RTL of piping_mul is
             end if;
         end loop;
 
-        assert ret < MUL_NUM report "Error selcted_flag:" & integer'image(to_integer(unsigned(sel))) severity ERROR;
+        assert ret < CAL_NUM report "Error selcted_flag:" & integer'image(to_integer(unsigned(sel))) severity ERROR;
         return ret;
     end function;
 
@@ -153,28 +154,17 @@ begin
         end if;
     end process;
 
-    --[TODO] mul_in_a is latch
-    -- process (all)begin
-    --     for i in 0 to N-1 loop
-    --         if selected_flag(i)='1' then
-    --             print("SEL" / i / sel_num(i, selected_flag));
-    --             mul_in_a(sel_num(i, selected_flag)) <= a(i);
-    --             mul_in_b(sel_num(i, selected_flag)) <= b(i);
-    --         end if;
-    --     end loop;
-    -- end process;
-
     process (all)begin
-        for i in 0 to MUL_NUM-1 loop
+        for i in 0 to CAL_NUM-1 loop
             -- print("SEL" / i / selected_flag / sel_num_in(i, selected_flag));
-            mul_in_a(i) <= a(sel_num_in(i, selected_flag));
-            mul_in_b(i) <= b(sel_num_in(i, selected_flag));
+            cal_in_a(i) <= a(sel_num_in(i, selected_flag));
+            cal_in_b(i) <= b(sel_num_in(i, selected_flag));
         end loop;
     end process;
 
     process (all) begin
-            for i in 0 to MUL_NUM-1 loop
-                mul_out(i) <= mul_main(mul_in_a(i), mul_in_b(i));
+            for i in 0 to CAL_NUM-1 loop
+                cal_out(i) <= cal_main(cal_in_a(i), cal_in_b(i));
             end loop;
     end process;
 
@@ -185,7 +175,7 @@ begin
         elsif rising_edge(clk) then
             for i in 0 to N-1 loop
                 if selected_flag(i)='1' then
-                    c_val(i) <= mul_out(sel_num(i, selected_flag));
+                    c_val(i) <= cal_out(sel_num(i, selected_flag));
                     o_valid_val(i) <= '1';
                 elsif o_ready(i)='1' then
                     o_valid_val(i) <= '0';

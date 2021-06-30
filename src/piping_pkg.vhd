@@ -3,9 +3,11 @@ library work;
 use ieee.std_logic_1164.all;
 
 package piping_pkg is
+    -- std_logic/_vectorの配列
     type sl_array_t is array(natural range <>) of std_logic;
     type slv_array_t is array(natural range <>) of std_logic_vector;
 
+    -- sl_array_t演算
     function "and"(l,r: sl_array_t) return sl_array_t;
     function "not"(l: sl_array_t) return sl_array_t;
 
@@ -31,4 +33,5 @@ package body piping_pkg is
         end loop;
         return ret;
     end function;
+
 end package body;

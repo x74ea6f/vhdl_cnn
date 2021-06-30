@@ -1,4 +1,4 @@
--- 乗算
+-- 加算
 library ieee;
 library work;
 use work.piping_pkg.all;
@@ -9,12 +9,12 @@ use work.numeric_lib.all;
 
 entity piping_add is
     generic(
-        N: positive:= 8;
-        A_DTW: positive:= 8;
-        B_DTW: positive:= 8;
-        C_DTW: positive:= 8;
-        CAL_NUM: positive:= 4;
-        SFT_NUM: natural := 1
+        N: positive:= 8; -- Input/Output Number
+        A_DTW: positive:= 8; // Input A Data Width
+        B_DTW: positive:= 8; // Input B Data Width
+        C_DTW: positive:= 8; // Output C Data Width
+        CAL_NUM: positive:= 4; // Calc Number
+        SFT_NUM: natural := 1 // Shift Number
     );
     port(
         clk: in std_logic;

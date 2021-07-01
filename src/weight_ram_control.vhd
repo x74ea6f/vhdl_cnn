@@ -1,4 +1,5 @@
--- 乗算
+-- Weithg RAM Control
+--[TODO] 難しいのであとで。
 library ieee;
 library work;
 use work.piping_pkg.all;
@@ -7,14 +8,13 @@ use ieee.numeric_std.all;
 use work.numeric_lib.all;
 -- use work.str_lib.all;
 
-entity piping_mul is
+entity weigth_ram_control is
     generic(
-        N: positive:= 8; -- Input/Output Number
-        A_DTW: positive:= 8; -- Input A Data Width
-        B_DTW: positive:= 8; -- Input B Data Width
-        C_DTW: positive:= 8; -- Output C Data Width
-        CAL_NUM: positive:= 4; -- Calc Number
-        SFT_NUM: natural := 4 -- Shift Number
+        N: positive:= 4; -- N
+        M: positive:= 8; -- MxL
+        L: positive:= 8; -- MxL
+        A_DTW: positive:= 8; // Input/Output A Data Width
+        ADR_DTW: positive:= 6
     );
     port(
         clk: in std_logic;
@@ -26,12 +26,15 @@ entity piping_mul is
         o_ready: in sl_array_t(0 to N-1);
 
         a: in slv_array_t(0 to N-1)(A_DTW-1 downto 0);
-        b: in slv_array_t(0 to N-1)(B_DTW-1 downto 0);
-        c: out slv_array_t(0 to N-1)(C_DTW-1 downto 0)
+        b: out slv_array_t(0 to N-1)(A_DTW-1 downto 0);
+
+        ram_re: out std_logic;
+        ram_addr: out std_logic_vector(ADR_DTW-1 downto 0);
+        ram_rd: in slv_array_t(0 to N*M-1)(A_DTW-1 downto 0)
     );
 end entity;
 
-architecture RTL of piping_mul is
+architecture RTL of weigth_ram_control is
 
     constant NN: positive := clog2(N);
 

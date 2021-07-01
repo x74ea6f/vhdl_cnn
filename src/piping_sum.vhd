@@ -14,13 +14,13 @@ entity piping_sum is
         M: positive:= 8; -- Input/Output Number
         N: positive:= 8; -- Input/Output Depth
         AB_DTW: positive:= 8; -- Input A Data Width
-        SFT_NUM: natural := 1 -- Shift Number
+        SFT_NUM: natural := 3 -- Shift Number
     );
     port(
         clk: in std_logic;
         rstn: in std_logic;
 
-        i_clear: in std_logic;
+        clear: in std_logic;
         i_valid: in sl_array_t(0 to M-1);
         i_ready: out sl_array_t(0 to M-1);
         o_valid: out std_logic;
@@ -38,6 +38,7 @@ architecture RTL of piping_sum is
     constant SUM_DTW: positive := AB_DTW + COUNT_DTW;
 
     signal sum_val: slv_array_t(0 to P*M-1)(SUM_DTW-1 downto 0);
+    signal out_ok: std_logic;
 
     signal i_ready_val: sl_array_t(0 to M-1);
     signal o_valid_val: std_logic;
@@ -77,6 +78,8 @@ begin
         end loop;
     end process;
 
+    i_ready <= i_ready_val;
+
 
     -- Input Count
     -- 本来はM個のカウンターを持ち、別々にカウントして、
@@ -87,13 +90,15 @@ begin
         if rstn='0' then
             i_count <= (others=>'0');
         elsif rising_edge(clk) then
-            if i_clear='1' then
+            if clear='1' then
                 i_count <= (others=>'0');
-            elsif i_valid(P*M-1)='1' then
+            elsif i_valid(P*M-1)='1' and i_ready_val(P*M-1)='1' then
                 i_count <= i_count + '1';
             end if;
         end if;
     end process;
+
+    out_ok <= '1' when i_count=COUNT_MAX_SLV else '0';
 
     -- Sum
     process (clk, rstn) begin
@@ -103,7 +108,7 @@ begin
             end loop;
         elsif rising_edge(clk) then
             for mm in 0 to P*M-1 loop
-                if i_clear='1' then
+                if clear='1' then
                     sum_val(mm) <= (others=>'0');
                 elsif i_valid(mm)='1' then
                     sum_val(mm) <= sum_val(mm) + a(mm);
@@ -119,11 +124,13 @@ begin
             o_count <= (others=>'0');
             o_valid_val <= '0';
         elsif rising_edge(clk) then
-            if i_clear='1' then
+            if clear='1' then
                 o_count <= (others=>'0');
                 o_valid_val <= '0';
-            elsif i_count=COUNT_MAX_SLV and o_count<=COUNT_MAX_SLV and o_ready='1' then
-                o_count <= o_count + '1';
+            elsif out_ok='1' and o_count<COUNT_MAX_SLV then
+                if o_valid_val='1' and o_ready='1' then
+                    o_count <= o_count + '1';
+                end if;
                 o_valid_val <= '1';
             else
                 o_valid_val <= '0';

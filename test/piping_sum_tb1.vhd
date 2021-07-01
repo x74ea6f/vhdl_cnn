@@ -17,7 +17,7 @@ entity piping_sum_tb1 is
         M: positive:= 8; -- Input/Output Number
         N: positive:= 8; -- Input/Output Depth
         AB_DTW: positive:= 8; -- Input A Data Width
-        SFT_NUM: natural := 3 -- Shift Number
+        SFT_NUM: natural := 2 -- Shift Number
     );
 end entity;
 
@@ -109,18 +109,18 @@ begin
 
             o_ready <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
             for mm in 0 to M-1 loop
-                for pp in 0 to P-1 loop
-                    if i_count(mm*P+pp)<N then
-                        i_valid_val := '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                        i_valid(mm*P+pp) <= i_valid_val;
-                        if i_valid_val='1' then
+                if i_count(mm)<N then
+                    i_valid_val := '1' when unsigned(rand_slv(2)) >= "01" else '0';
+                    i_valid(mm) <= i_valid_val;
+                    if i_valid_val='1' then
+                        for pp in 0 to P-1 loop
                             a(mm*P+pp) <= rand_slv(AB_DTW);
-                            i_count(mm*P+pp) := i_count(mm*P+pp) + 1;
-                        end if;
-                    else
-                        i_valid(mm*P+pp) <= '0';
+                        end loop;
+                        i_count(mm) := i_count(mm) + 1;
                     end if;
-                end loop;
+                else
+                    i_valid(mm) <= '0';
+                end if;
             end loop;
 
             if o_count=M then

@@ -34,11 +34,11 @@ end entity;
 architecture RTL of piping_sum is
 
     constant I_COUNT_DTW: positive := clog2(N);
-    constant O_COUNT_DTW: positive := clog2(P*M);
+    constant O_COUNT_DTW: positive := clog2(M);
     constant I_COUNT_MAX_SLV: std_logic_vector(I_COUNT_DTW-1 downto 0)
         := std_logic_vector(to_unsigned(N-1, I_COUNT_DTW));
     constant O_COUNT_MAX_SLV: std_logic_vector(O_COUNT_DTW-1 downto 0)
-        := std_logic_vector(to_unsigned(P*M-1, O_COUNT_DTW));
+        := std_logic_vector(to_unsigned(M-1, O_COUNT_DTW));
 
     constant SUM_DTW: positive := AB_DTW + I_COUNT_DTW;
 
@@ -65,7 +65,7 @@ architecture RTL of piping_sum is
         variable v_ret: signed(AB_DTW-1 downto 0);
         variable ret: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
     begin
-        offset := to_integer(unsigned(o_count));
+        offset := to_integer(unsigned(o_count))*P;
         for pp in 0 to P-1 loop
             v_sum := signed(sum_val(offset + pp));
             v_sft := v_sum when SFT_NUM=0 else f_round(v_sum, v_sft'length);
@@ -120,13 +120,15 @@ begin
                 sum_val(mm) <= (others=>'0');
             end loop;
         elsif rising_edge(clk) then
-            for mm in 0 to P*M-1 loop
-                if clear='1' then
-                    sum_val(mm) <= (others=>'0');
-                elsif i_valid(mm)='1' then
-                    sum_val(mm) <= f_add_s(sum_val(mm), a(mm))(SUM_DTW-1 downto 0); -- Not Overflow
-                    -- sum_val(mm) <= next_sum_val(sum_val(mm), a(mm));
-                end if;
+            for mm in 0 to M-1 loop
+                for pp in 0 to P-1 loop
+                    if clear='1' then
+                        sum_val(mm*P+pp) <= (others=>'0');
+                    elsif i_valid(mm)='1' and i_ready_val(mm)='1' then
+                    -- elsif i_valid(mm)='1' then
+                        sum_val(mm*P+pp) <= f_add_s(sum_val(mm*P+pp), a(mm*P+pp))(SUM_DTW-1 downto 0); -- Not Overflow
+                    end if;
+                end loop;
             end loop;
         end if;
     end process;
@@ -145,7 +147,7 @@ begin
                     o_count <= o_count + '1';
                 end if;
                 o_valid_val <= '1';
-            else
+            elsif o_ready='1' then
                 o_valid_val <= '0';
             end if;
         end if;

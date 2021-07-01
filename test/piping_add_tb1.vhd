@@ -13,6 +13,7 @@ use work.piping_pkg.all;
 
 entity piping_add_tb1 is
     generic(
+        P: positive:= 2;
         N: positive:= 8;
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
@@ -29,13 +30,15 @@ architecture SIM of piping_add_tb1 is
     signal i_valid: sl_array_t(0 to N-1):=(others=>'0');
     signal o_ready: sl_array_t(0 to N-1):=(others=>'0');
     signal o_valid: sl_array_t(0 to N-1):=(others=>'0');
-    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal c: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
+    signal a: slv_array_t(0 to P*N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal b: slv_array_t(0 to P*N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal c: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
 
-    signal exp: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
+    signal exp: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
 begin
     piping_add: entity work.piping_add generic map(
+        P=>P,
+        N=>N,
         A_DTW=>A_DTW,
         B_DTW=>B_DTW,
         C_DTW=>C_DTW,
@@ -82,7 +85,9 @@ begin
     begin
         for i in 0 to N-1 loop
             if i_valid(i)='1' and i_ready(i)='1' then
-                exp(i) <= cal_exp(a(i), b(i));
+                for pp in 0 to P-1 loop
+                    exp(i*P+pp) <= cal_exp(a(i*P+pp), b(i*P+pp));
+                end loop;
             end if;
         end loop;
     end process;
@@ -97,15 +102,19 @@ begin
         for k in 0 to 100 loop
             for i in 0 to N-1 loop
                 if o_valid(i)='1' then
-                    check(c(i), exp(i), "DATA" + i, True);
+                    for pp in 0 to P-1 loop
+                        check(c(i*P+pp), exp(i*P+pp), "DATA" + (i*P+pp), True);
+                    end loop;
                 end if;
             end loop;
 
             for i in 0 to N-1 loop
                 i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
                 o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                a(i) <= rand_slv(A_DTW);
-                b(i) <= rand_slv(B_DTW);
+                for pp in 0 to P-1 loop
+                    a(i*P+pp) <= rand_slv(A_DTW);
+                    b(i*P+pp) <= rand_slv(B_DTW);
+                end loop;
             end loop;
 
             wait_clock(clk, 1);

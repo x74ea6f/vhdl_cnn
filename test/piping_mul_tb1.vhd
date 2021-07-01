@@ -12,6 +12,7 @@ use work.piping_pkg.all;
 
 entity piping_mul_tb1 is
     generic(
+        P: positive:= 2;
         N: positive:= 8;
         A_DTW: positive:= 8;
         B_DTW: positive:= 8;
@@ -31,13 +32,15 @@ architecture SIM of piping_mul_tb1 is
     signal i_valid: sl_array_t(0 to N-1):=(others=>'0');
     signal o_ready: sl_array_t(0 to N-1):=(others=>'0');
     signal o_valid: sl_array_t(0 to N-1):=(others=>'0');
-    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>ZERO_A_DTW);
-    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>ZERO_B_DTW);
-    signal c: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
+    signal a: slv_array_t(0 to P*N-1)(A_DTW-1 downto 0):=(others=>ZERO_A_DTW);
+    signal b: slv_array_t(0 to P*N-1)(B_DTW-1 downto 0):=(others=>ZERO_B_DTW);
+    signal c: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
 
-    signal exp: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
+    signal exp: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
 begin
     piping_mul: entity work.piping_mul generic map(
+        P=>P,
+        N=>N,
         A_DTW=>A_DTW,
         B_DTW=>B_DTW,
         C_DTW=>C_DTW,
@@ -60,7 +63,7 @@ begin
 
     -- make expected data
     process (all)
-        function tmp(a,b: std_logic_vector) return std_logic_vector is
+        function cal_exp(a,b: std_logic_vector) return std_logic_vector is
             variable aa: integer;
             variable bb: integer;
             variable cc: integer;
@@ -69,13 +72,18 @@ begin
             aa := to_integer(signed(a));
             bb := to_integer(signed(b));
             cc := aa * bb;
+            --[TODO] shift
+            cc := maximum(-2**(C_DTW-1), cc); -- clip
+            cc := minimum(2**(C_DTW-1)-1, cc); -- clip
             ret := std_logic_vector(to_signed(cc, C_DTW));
             return ret;
         end function;
     begin
         for i in 0 to N-1 loop
             if i_valid(i)='1' and o_ready(i)='1' then
-                exp(i) <= tmp(a(i), b(i));
+                for pp in 0 to P-1 loop
+                    exp(i*P+pp) <= cal_exp(a(i*P+pp), b(i*P+pp));
+                end loop;
             end if;
         end loop;
     end process;
@@ -90,8 +98,10 @@ begin
         for i in 0 to N-1 loop
             i_valid(i) <= '1';
             o_ready(i) <= '1';
-            a(i) <= std_logic_vector(to_signed(i,  A_DTW));
-            b(i) <= std_logic_vector(to_signed(i,  A_DTW));
+            for pp in 0 to P-1 loop
+                a(i*P+pp) <= std_logic_vector(to_signed(i*P+pp,  A_DTW));
+                b(i*P+pp) <= std_logic_vector(to_signed(i*P+pp,  A_DTW));
+            end loop;
         end loop;
 
         wait_clock(clk, 5); -- wait clock rising, 5times
@@ -99,7 +109,9 @@ begin
         for i in 0 to N-1 loop
             i_valid(i) <= '0';
             o_ready(i) <= '0';
-            check(c(i), exp(i), "DATA" + i, True);
+            for pp in 0 to P-1 loop
+                check(c(i*P+pp), exp(i*P+pp), "DATA" + (i*P+pp), True);
+            end loop;
         end loop;
         wait_clock(clk, 5); -- wait clock rising, 5times
 

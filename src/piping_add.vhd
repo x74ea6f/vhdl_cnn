@@ -9,12 +9,13 @@ use work.numeric_lib.all;
 
 entity piping_add is
     generic(
+        P: positive:= 1; -- Data Parallel
         N: positive:= 8; -- Input/Output Number
-        A_DTW: positive:= 8; // Input A Data Width
-        B_DTW: positive:= 8; // Input B Data Width
-        C_DTW: positive:= 8; // Output C Data Width
-        CAL_NUM: positive:= 4; // Calc Number
-        SFT_NUM: natural := 1 // Shift Number
+        A_DTW: positive:= 8; -- Input A Data Width
+        B_DTW: positive:= 8; -- Input B Data Width
+        C_DTW: positive:= 8; -- Output C Data Width
+        CAL_NUM: positive:= 4; -- Calc Number
+        SFT_NUM: natural := 1 -- Shift Number
     );
     port(
         clk: in std_logic;
@@ -25,9 +26,9 @@ entity piping_add is
         o_valid: out sl_array_t(0 to N-1);
         o_ready: in sl_array_t(0 to N-1);
 
-        a: in slv_array_t(0 to N-1)(A_DTW-1 downto 0);
-        b: in slv_array_t(0 to N-1)(B_DTW-1 downto 0);
-        c: out slv_array_t(0 to N-1)(C_DTW-1 downto 0)
+        a: in slv_array_t(0 to P*N-1)(A_DTW-1 downto 0);
+        b: in slv_array_t(0 to P*N-1)(B_DTW-1 downto 0);
+        c: out slv_array_t(0 to P*N-1)(C_DTW-1 downto 0)
     );
 end entity;
 
@@ -35,15 +36,14 @@ architecture RTL of piping_add is
 
     constant NN: positive := clog2(N);
 
-    signal c_val: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
+    signal c_val: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
     signal i_ready_val: sl_array_t(0 to N-1);
     signal o_valid_val: sl_array_t(0 to N-1);
 
-    signal cal_in_a: slv_array_t(0 to CAL_NUM-1)(A_DTW-1 downto 0);
-    signal cal_in_b: slv_array_t(0 to CAL_NUM-1)(B_DTW-1 downto 0);
-    signal cal_out: slv_array_t(0 to CAL_NUM-1)(C_DTW-1 downto 0);
+    signal cal_in_a: slv_array_t(0 to P*CAL_NUM-1)(A_DTW-1 downto 0);
+    signal cal_in_b: slv_array_t(0 to P*CAL_NUM-1)(B_DTW-1 downto 0);
+    signal cal_out: slv_array_t(0 to P*CAL_NUM-1)(C_DTW-1 downto 0);
 
-    --[TODO]
     -- 計算メイン処理
     function cal_main(a, b: std_logic_vector) return std_logic_vector is
         constant O_DTW: positive := maximum(a'length, b'length) + 1;
@@ -158,14 +158,18 @@ begin
     process (all)begin
         for i in 0 to CAL_NUM-1 loop
             -- print("SEL" / i / selected_flag / sel_num_in(i, selected_flag));
-            cal_in_a(i) <= a(sel_num_in(i, selected_flag));
-            cal_in_b(i) <= b(sel_num_in(i, selected_flag));
+            for pp in 0 to P-1 loop
+                cal_in_a(i*P+pp) <= a(sel_num_in(i, selected_flag)*P+pp);
+                cal_in_b(i*P+pp) <= b(sel_num_in(i, selected_flag)*P+pp);
+            end loop;
         end loop;
     end process;
 
     process (all) begin
             for i in 0 to CAL_NUM-1 loop
-                cal_out(i) <= cal_main(cal_in_a(i), cal_in_b(i));
+                for pp in 0 to P-1 loop
+                    cal_out(i*P+pp) <= cal_main(cal_in_a(i*P+pp), cal_in_b(i*P+pp));
+                end loop;
             end loop;
     end process;
 
@@ -176,7 +180,9 @@ begin
         elsif rising_edge(clk) then
             for i in 0 to N-1 loop
                 if selected_flag(i)='1' then
-                    c_val(i) <= cal_out(sel_num(i, selected_flag));
+                    for pp in 0 to P-1 loop
+                        c_val(i*P+pp) <= cal_out(sel_num(i, selected_flag)*P+pp);
+                    end loop;
                     o_valid_val(i) <= '1';
                 elsif o_ready(i)='1' then
                     o_valid_val(i) <= '0';

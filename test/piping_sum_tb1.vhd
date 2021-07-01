@@ -34,6 +34,7 @@ architecture SIM of piping_sum_tb1 is
 
     signal sum: integer_vector(0 to P*M-1):= (others=>0);
     signal exp: slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0);
+    signal o_count: integer:=0;
 begin
     piping_sum: entity work.piping_sum generic map(
         P=>P,
@@ -63,7 +64,9 @@ begin
         if rising_edge(clk) then
             for mm in 0 to M-1 loop
                 for pp in 0 to P-1 loop
-                    if i_valid(mm)='1' and i_ready(mm)='1' then
+                    if clear='1' then
+                        sum(mm*P+pp) <= 0;
+                    elsif i_valid(mm)='1' and i_ready(mm)='1' then
                         sum(mm*P+pp) <= sum(mm*P+pp) + to_integer(signed(a(mm*P+pp)));
                     end if;
                 end loop;
@@ -93,9 +96,9 @@ begin
     end process;
 
     process
-        variable input_count: integer_vector(0 to M-1):=(others=>0);
+        variable i_count: integer_vector(0 to M-1):=(others=>0);
         variable i_valid_val: std_logic;
-        variable o_count: integer:= 0;
+        -- variable o_count: integer:= 0;
     begin
         print("Hello world!");
 
@@ -103,22 +106,16 @@ begin
         wait_clock(clk, 5); -- wait clock rising, 5times
 
         for k in 0 to 100 loop
-            if o_valid='1' and o_ready='1' then
-                for pp in 0 to P-1 loop
-                    check(b(pp), exp(o_count*P+pp), "DATA" + (o_count*P+p), True);
-                end loop;
-                o_count := o_count + 1;
-            end if;
 
             o_ready <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
             for mm in 0 to M-1 loop
                 for pp in 0 to P-1 loop
-                    if input_count(mm*P+pp)<N then
+                    if i_count(mm*P+pp)<N then
                         i_valid_val := '1' when unsigned(rand_slv(2)) >= "01" else '0';
                         i_valid(mm*P+pp) <= i_valid_val;
                         if i_valid_val='1' then
                             a(mm*P+pp) <= rand_slv(AB_DTW);
-                            input_count(mm*P+pp) := input_count(mm*P+pp) + 1;
+                            i_count(mm*P+pp) := i_count(mm*P+pp) + 1;
                         end if;
                     else
                         i_valid(mm*P+pp) <= '0';
@@ -126,8 +123,13 @@ begin
                 end loop;
             end loop;
 
+            if o_count=M then
+                clear <= '1';
+                i_count := (others=>0);
+            end if;
             wait_clock(clk, 1);
             wait for 1 ns;
+            clear <= '0';
         end loop;
 
         wait_clock(clk, 5); -- wait clock rising, 5times
@@ -136,6 +138,18 @@ begin
         wait;
     end process;
 
+    process (clk)begin
+        if rising_edge(clk) then
+            if clear='1' then
+                o_count <= 0;
+            elsif o_ready='1' and o_valid='1' then
+                o_count <= o_count + 1;
+                for pp in 0 to P-1 loop
+                    check(b(pp), exp(o_count*P+pp), "DATA" + (o_count*P+pp), True);
+                end loop;
+            end if;
+        end if;
+    end process;
 
     process(all) begin
         if(falling_edge(o_valid)=True) then

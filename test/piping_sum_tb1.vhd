@@ -32,7 +32,8 @@ architecture SIM of piping_sum_tb1 is
     signal a: slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
     signal b: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
 
-    signal exp: slv_array_t(0 to P*N-1)(AB_DTW-1 downto 0);
+    signal sum: integer_vector(0 to P*M-1):= (others=>0);
+    signal exp: slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0);
 begin
     piping_sum: entity work.piping_sum generic map(
         P=>P,
@@ -57,39 +58,44 @@ begin
 
     --[TODO]
     -- make expected data
-    -- process (all)
-    --     function cal_exp(a,b: std_logic_vector) return std_logic_vector is
-    --         variable aa: integer;
-    --         variable bb: integer;
-    --         variable cc_real: real;
-    --         variable cc: integer;
-    --         variable ret: std_logic_vector(C_DTW-1 downto 0);
-    --     begin
-    --         aa := to_integer(signed(a));
-    --         bb := to_integer(signed(b));
-    --         cc := aa + bb;
-    --         if SFT_NUM/=0 then
-    --             cc_real := real(cc) / (2.0**SFT_NUM);
-    --             cc_real := floor(real(cc) / (2.0**SFT_NUM) + 0.5);
-    --             -- cc_real := round(real(cc) / (2.0**SFT_NUM));
-    --             cc := integer(cc_real);
-    --         end if;
-    --         cc := minimum(cc, 2**(C_DTW-1)-1); -- clip
-    --         cc := maximum(cc, -2**(C_DTW-1)); -- clip
-    --         ret := std_logic_vector(to_signed(cc, C_DTW));
-    --         return ret;
-    --     end function;
-    -- begin
-    --     for i in 0 to N-1 loop
-    --         if i_valid(i)='1' and i_ready(i)='1' then
-    --             exp(i) <= cal_exp(a(i), b(i));
-    --         end if;
-    --     end loop;
-    -- end process;
+    process (clk)
+    begin
+        if rising_edge(clk) then
+            for mm in 0 to M-1 loop
+                for pp in 0 to P-1 loop
+                    if i_valid(mm)='1' and i_ready(mm)='1' then
+                        sum(mm*P+pp) <= sum(mm*P+pp) + to_integer(signed(a(mm*P+pp)));
+                    end if;
+                end loop;
+            end loop;
+        end if;
+    end process;
+
+    process (all)
+        function make_exp(s: integer) return std_logic_vector is
+            variable ret: std_logic_vector(AB_DTW-1 downto 0);
+            variable s_rl: real;
+        begin
+            s_rl := real(s);
+            s_rl := s_rl/(2.0**SFT_NUM); -- shift
+            s_rl := floor(s_rl + 0.5); -- round
+            s_rl := maximum(-2.0**(AB_DTW-1), s_rl); -- clip
+            s_rl := minimum(2.0**(AB_DTW-1)-1.0, s_rl); -- clip
+            ret := std_logic_vector(to_signed(integer(s_rl), AB_DTW));
+            return ret;
+        end function;
+    begin
+        for mm in 0 to M-1 loop
+            for pp in 0 to P-1 loop
+                exp(mm*P+pp) <= make_exp(sum(mm*P+pp));
+            end loop;
+        end loop;
+    end process;
 
     process
         variable input_count: integer_vector(0 to M-1):=(others=>0);
         variable i_valid_val: std_logic;
+        variable o_count: integer:= 0;
     begin
         print("Hello world!");
 
@@ -97,11 +103,12 @@ begin
         wait_clock(clk, 5); -- wait clock rising, 5times
 
         for k in 0 to 100 loop
-            -- for i in 0 to N-1 loop
-            --     if o_valid(i)='1' then
-            --         check(c(i), exp(i), "DATA" + i, True);
-            --     end if;
-            -- end loop;
+            if o_valid='1' and o_ready='1' then
+                for pp in 0 to P-1 loop
+                    check(b(pp), exp(o_count*P+pp), "DATA" + (o_count*P+p), True);
+                end loop;
+                o_count := o_count + 1;
+            end if;
 
             o_ready <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
             for mm in 0 to M-1 loop

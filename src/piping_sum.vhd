@@ -33,9 +33,14 @@ end entity;
 
 architecture RTL of piping_sum is
 
-    constant COUNT_DTW: positive := clog2(N);
-    constant COUNT_MAX_SLV: std_logic_vector(COUNT_DTW-1 downto 0) := std_logic_vector(to_unsigned(N-1, COUNT_DTW));
-    constant SUM_DTW: positive := AB_DTW + COUNT_DTW;
+    constant I_COUNT_DTW: positive := clog2(N);
+    constant O_COUNT_DTW: positive := clog2(P*M);
+    constant I_COUNT_MAX_SLV: std_logic_vector(I_COUNT_DTW-1 downto 0)
+        := std_logic_vector(to_unsigned(N-1, I_COUNT_DTW));
+    constant O_COUNT_MAX_SLV: std_logic_vector(O_COUNT_DTW-1 downto 0)
+        := std_logic_vector(to_unsigned(P*M-1, O_COUNT_DTW));
+
+    constant SUM_DTW: positive := AB_DTW + I_COUNT_DTW;
 
     signal sum_val: slv_array_t(0 to P*M-1)(SUM_DTW-1 downto 0);
     signal out_ok: std_logic;
@@ -44,8 +49,8 @@ architecture RTL of piping_sum is
     signal o_valid_val: std_logic;
     signal b_val: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
 
-    signal i_count: std_logic_vector(COUNT_DTW-1 downto 0);
-    signal o_count: std_logic_vector(COUNT_DTW-1 downto 0);
+    signal i_count: slv_array_t(0 to M-1)(I_COUNT_DTW-1 downto 0);
+    signal o_count: std_logic_vector(O_COUNT_DTW-1 downto 0);
 
     -- function next_sum_val(s: std_logic_vector; a: std_logic_vector) return std_logic_vector is
     -- begin
@@ -71,34 +76,42 @@ architecture RTL of piping_sum is
     end function;
 begin
 
-    -- i_ready, 出力してる時だけ止める。
-    process (all) begin
-        for mm in 0 to M-1 loop
-            i_ready_val(mm) <= not o_valid_val;
-        end loop;
+    -- Input Count
+    process (clk, rstn) begin
+        if rstn='0' then
+            for mm in 0 to M-1 loop
+                i_count(mm) <= (others=>'0');
+                i_ready_val(mm) <= '1';
+            end loop;
+        elsif rising_edge(clk) then
+            for mm in 0 to M-1 loop
+                if clear='1' then
+                    i_count(mm) <= (others=>'0');
+                    i_ready_val(mm) <= '1';
+                elsif i_valid(mm)='1' then 
+                    if i_count(mm)<I_COUNT_MAX_SLV then
+                        i_count(mm) <= i_count(mm) + '1';
+                        i_ready_val(mm) <= '1';
+                    else
+                        i_ready_val(mm) <= '0';
+                    end if;
+                end if;
+            end loop;
+        end if;
     end process;
 
     i_ready <= i_ready_val;
 
-
-    -- Input Count
-    -- 本来はM個のカウンターを持ち、別々にカウントして、
-    -- 全部が終了時に、全体を終了とするべきだが、
-    -- 0~M-1で、M-1が最後に終わることは確定のはずなので
-    -- M-1のデータ数だけをカウントする。
-    process (clk, rstn) begin
-        if rstn='0' then
-            i_count <= (others=>'0');
-        elsif rising_edge(clk) then
-            if clear='1' then
-                i_count <= (others=>'0');
-            elsif i_valid(P*M-1)='1' and i_ready_val(P*M-1)='1' then
-                i_count <= i_count + '1';
-            end if;
-        end if;
+    -- All Channel OK
+    process (all)
+        variable out_ok_val: std_logic;
+    begin
+        out_ok_val := '1';
+        for mm in 0 to M-1 loop
+            out_ok_val := out_ok_val when i_count(mm)=I_COUNT_MAX_SLV else '0';
+        end loop;
+        out_ok <= out_ok_val;
     end process;
-
-    out_ok <= '1' when i_count=COUNT_MAX_SLV else '0';
 
     -- Sum
     process (clk, rstn) begin
@@ -111,7 +124,7 @@ begin
                 if clear='1' then
                     sum_val(mm) <= (others=>'0');
                 elsif i_valid(mm)='1' then
-                    sum_val(mm) <= sum_val(mm) + a(mm);
+                    sum_val(mm) <= f_add_s(sum_val(mm), a(mm))(SUM_DTW-1 downto 0); -- Not Overflow
                     -- sum_val(mm) <= next_sum_val(sum_val(mm), a(mm));
                 end if;
             end loop;
@@ -127,7 +140,7 @@ begin
             if clear='1' then
                 o_count <= (others=>'0');
                 o_valid_val <= '0';
-            elsif out_ok='1' and o_count<COUNT_MAX_SLV then
+            elsif out_ok='1' and o_count<O_COUNT_MAX_SLV then
                 if o_valid_val='1' and o_ready='1' then
                     o_count <= o_count + '1';
                 end if;
@@ -141,12 +154,8 @@ begin
     o_valid <= o_valid_val;
 
     -- Output Data
-    process (clk, rstn) begin
-        if rstn='0' then
-            b_val <= (others=>(others=>'0'));
-        elsif rising_edge(clk) then
-            b_val <= sum_out(sum_val, o_count);
-        end if;
+    process (all) begin
+        b_val <= sum_out(sum_val, o_count);
     end process;
 
     b <= b_val;

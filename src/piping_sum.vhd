@@ -156,10 +156,7 @@ begin
     o_valid <= o_valid_val;
 
     -- Output Data
-    process (all) begin
-        b_val <= sum_out(sum_val, o_count);
-    end process;
-
+    b_val <= sum_out(sum_val, o_count);
     b <= b_val;
 
 end architecture;

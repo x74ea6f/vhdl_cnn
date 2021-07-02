@@ -13,7 +13,7 @@ use work.piping_pkg.all;
 
 entity w_ram_control_tb1 is
     generic(
-        P: positive:= 1; -- Data Parallel
+        P: positive:= 2; -- Data Parallel
         N: positive:= 8; -- N, Data Depth
         M: positive:= 8; -- MxN
         A_DTW: positive:= 8; -- Input/Output A Data Width
@@ -46,6 +46,20 @@ architecture SIM of w_ram_control_tb1 is
     signal ram_we: std_logic:= '0';
     signal ram_waddr: std_logic_vector(ADR_DTW-1 downto 0):=(others=>'0');
 
+    function make_mem_init(constant DTW, DEPTH: positive) return mem_t is
+        variable ret: mem_t(0 to DEPTH-1)(DTW-1 downto 0);
+    begin
+        for adr in 0 to DEPTH-1 loop
+            for mm in 0 to M-1 loop
+                for pp in 0 to P-1 loop
+                    ret(adr)((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW) :=
+                        std_logic_vector(to_unsigned(adr*M*P+mm*P+pp, A_DTW));
+                end loop;
+            end loop;
+        end loop;
+        return ret;
+    end function;
+
 begin
     w_ram_control: entity work.w_ram_control generic map(
         P => P,
@@ -74,7 +88,8 @@ begin
     w_raml: entity work.ram1rw generic map(
         DTW=>P*M*A_DTW,
         ADW=>ADR_DTW,
-        DEPTH=>N/P
+        DEPTH=>(N+P-1)/P,
+        MEM_INIT=>make_mem_init(P*M*A_DTW, (N+P-1)/P)
     )port map(
         clk=>clk,
         ce=>ram_ce,
@@ -96,19 +111,19 @@ begin
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        -- Write RAM
-        ram_we <= '1';
-        for adr in 0 to 2**ADR_DTW-1 loop
-            ram_waddr <= std_logic_vector(to_unsigned(adr, ADR_DTW));
-            for mm in 0 to M-1 loop
-                for pp in 0 to P-1 loop
-                    ram_d((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW) <=
-                        std_logic_vector(to_unsigned(adr*M*P+mm*P+pp, A_DTW));
-                end loop;
-            end loop;
-            wait_clock(clk, 1);
-        end loop;
-        ram_we <= '0';
+        -- -- Write RAM
+        -- ram_we <= '1';
+        -- for adr in 0 to 2**ADR_DTW-1 loop
+        --     ram_waddr <= std_logic_vector(to_unsigned(adr, ADR_DTW));
+        --     for mm in 0 to M-1 loop
+        --         for pp in 0 to P-1 loop
+        --             ram_d((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW) <=
+        --                 std_logic_vector(to_unsigned(adr*M*P+mm*P+pp, A_DTW));
+        --         end loop;
+        --     end loop;
+        --     wait_clock(clk, 1);
+        -- end loop;
+        -- ram_we <= '0';
 
         --
         for nn in 0 to N*10 loop
@@ -146,6 +161,21 @@ begin
             end loop;
         end loop;
     end process;
+
+    process (clk) begin
+        if rising_edge(clk) then
+            for mm in 0 to M-1 loop
+                if o_valid(mm)='1' and o_ready(mm)='1' then
+                    print(to_str(mm) & ": ", False);
+                    for pp in 0 to P-1 loop
+                        print(to_str(c(mm*P+pp)) & ",", False);
+                    end loop;
+                    print("");
+                end if;
+            end loop;
+        end if;
+    end process;
+    
 
     ASSERT_VALID: for mm in 0 to M-1 generate
         process(all) begin

@@ -7,6 +7,9 @@ package piping_pkg is
     type sl_array_t is array(natural range <>) of std_logic;
     type slv_array_t is array(natural range <>) of std_logic_vector;
 
+    -- 同じだけど。
+    type mem_t is array(natural range <>) of std_logic_vector;
+
     -- sl_array_t演算
     function "and"(l,r: sl_array_t) return sl_array_t;
     function "not"(l: sl_array_t) return sl_array_t;

@@ -3,11 +3,15 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library work;
+use work.piping_pkg.all;
+
 entity ram1rw is
     generic(
         DTW: positive:= 8; -- Data Width
         ADW: positive:= 8; -- Address Width
-        DEPTH: positive:= 256 -- Input B Data Width
+        DEPTH: positive:= 256; -- Input B Data Width
+        MEM_INIT: mem_t(0 to DEPTH-1)(DTW-1 downto 0) := (others=>(others=>'0'))
     );
     port(
         clk: in std_logic;
@@ -20,8 +24,8 @@ entity ram1rw is
 end entity;
 
 architecture RTL of ram1rw is
-    type mem_t is array(natural range <>) of std_logic_vector;
-    signal mem: mem_t(0 to DEPTH-1)(DTW-1 downto 0);
+    -- type mem_t is array(natural range <>) of std_logic_vector;
+    signal mem: mem_t(0 to DEPTH-1)(DTW-1 downto 0) := MEM_INIT;
 
     signal q_val: std_logic_vector(DTW-1 downto 0);
 begin

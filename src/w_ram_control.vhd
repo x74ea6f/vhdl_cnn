@@ -38,6 +38,7 @@ end entity;
 architecture RTL of w_ram_control is
 
     constant NN: positive := clog2(N);
+    constant ADR_MAX_SLV: std_logic_vector(ADR_DTW-1 downto 0) := std_logic_vector(to_unsigned((N+P-1)/P-1, ADR_DTW));
 
     signal i_ready_val: std_logic;
     signal o_valid_val: sl_array_t(0 to M-1);
@@ -117,7 +118,11 @@ begin
             if clear='1' then
                 ram_addr_val <= (others=>'0');
             elsif i_valid='1' and i_ready_val='1' then
-                ram_addr_val <= ram_addr_val + '1';
+                if ram_addr_val=ADR_MAX_SLV then
+                    ram_addr_val <= (others=>'0');
+                else 
+                    ram_addr_val <= ram_addr_val + '1';
+                end if;
             end if;
         end if;
     end process;

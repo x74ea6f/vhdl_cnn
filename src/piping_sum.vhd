@@ -52,6 +52,9 @@ architecture RTL of piping_sum is
     signal i_count: slv_array_t(0 to M-1)(I_COUNT_DTW-1 downto 0);
     signal o_count: std_logic_vector(O_COUNT_DTW-1 downto 0);
 
+    signal o_done: std_logic;
+    signal self_clear: std_logic;
+
     -- function next_sum_val(s: std_logic_vector; a: std_logic_vector) return std_logic_vector is
     -- begin
     --     return std_logic_vector(signed(s) + signed(a));
@@ -85,7 +88,7 @@ begin
             end loop;
         elsif rising_edge(clk) then
             for mm in 0 to M-1 loop
-                if clear='1' then
+                if self_clear='1' then
                     i_count(mm) <= (others=>'0');
                     i_ready_val(mm) <= '1';
                 elsif i_valid(mm)='1' then 
@@ -122,7 +125,7 @@ begin
         elsif rising_edge(clk) then
             for mm in 0 to M-1 loop
                 for pp in 0 to P-1 loop
-                    if clear='1' then
+                    if self_clear='1' then
                         sum_val(mm*P+pp) <= (others=>'0');
                     elsif i_valid(mm)='1' and i_ready_val(mm)='1' then
                     -- elsif i_valid(mm)='1' then
@@ -139,7 +142,7 @@ begin
             o_count <= (others=>'0');
             o_valid_val <= '0';
         elsif rising_edge(clk) then
-            if clear='1' then
+            if self_clear='1' then
                 o_count <= (others=>'0');
                 o_valid_val <= '0';
             elsif out_ok='1' and o_count<O_COUNT_MAX_SLV then
@@ -152,6 +155,9 @@ begin
             end if;
         end if;
     end process;
+
+    o_done <= '1' when o_count=O_COUNT_MAX_SLV else '0';
+    self_clear <= clear or o_done;
 
     o_valid <= o_valid_val;
 

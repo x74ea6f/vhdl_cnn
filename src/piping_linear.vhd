@@ -10,7 +10,7 @@ use work.numeric_lib.all;
 entity piping_linear is
     generic(
         P: positive:= 4; -- Data Parallel
-        N: positive:= 8*7*7/P; -- N, Data Depth
+        N: positive:= 8*7*7; -- N, Data Depth
         M: positive:= 32; -- MxN
         A_DTW: positive:= 8; -- Input/Output A Data Width
         W_MEM_INIT: mem_t(0 to (N+P-1)/P-1)(P*M*A_DTW-1 downto 0) := (others=>(others=>'0'));

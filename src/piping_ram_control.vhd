@@ -58,10 +58,20 @@ architecture RTL of piping_ram_control is
         return ret;
     end function;
 
+    function f_or_reduce(s: sl_array_t) return std_logic is
+        variable ret: std_logic := '0';
+    begin
+        for i in s'range loop
+            ret := ret or s(i);
+        end loop;
+        return ret;
+    end function;
+
 begin
 
     -- 0~M処理終わってから次のデータ要求
-    i_ready_val <= f_and_reduce(o_ready);
+    i_ready_val <= not f_or_reduce(o_valid);
+    -- i_ready_val <= f_and_reduce(o_ready);
     i_ready <= i_ready_val;
 
     ram_re_val <= i_valid and i_ready_val;

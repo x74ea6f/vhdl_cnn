@@ -11,7 +11,7 @@ use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
 
-entity w_ram_control_tb1 is
+entity piping_ram_control_tb1 is
     generic(
         P: positive:= 2; -- Data Parallel
         N: positive:= 8; -- N, Data Depth
@@ -21,7 +21,7 @@ entity w_ram_control_tb1 is
     );
 end entity;
 
-architecture SIM of w_ram_control_tb1 is
+architecture SIM of piping_ram_control_tb1 is
     signal clk: std_logic;
     signal rstn: std_logic;
 
@@ -61,7 +61,7 @@ architecture SIM of w_ram_control_tb1 is
     end function;
 
 begin
-    w_ram_control: entity work.w_ram_control generic map(
+    piping_ram_control: entity work.piping_ram_control generic map(
         P => P,
         N => N,
         M => M,

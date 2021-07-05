@@ -7,7 +7,7 @@ use ieee.numeric_std.all;
 use work.numeric_lib.all;
 -- use work.str_lib.all;
 
-entity w_ram_control is
+entity piping_ram_control is
     generic(
         P: positive:= 1; -- Data Parallel
         N: positive:= 8; -- N, Data Depth
@@ -35,7 +35,7 @@ entity w_ram_control is
     );
 end entity;
 
-architecture RTL of w_ram_control is
+architecture RTL of piping_ram_control is
 
     constant NN: positive := clog2(N);
     constant ADR_MAX_SLV: std_logic_vector(ADR_DTW-1 downto 0) := std_logic_vector(to_unsigned((N+P-1)/P-1, ADR_DTW));

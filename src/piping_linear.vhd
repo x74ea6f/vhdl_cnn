@@ -13,8 +13,8 @@ entity piping_linear is
         N: positive:= 8*7*7; -- N, Data Depth
         M: positive:= 32; -- MxN
         A_DTW: positive:= 8; -- Input/Output A Data Width
-        W_MEM_INIT: mem_t(0 to (N+P-1)/P-1)(P*M*A_DTW-1 downto 0) := (others=>(others=>'0'));
-        B_MEM_INIT: mem_t(0 to (M+P-1)/P-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'))
+        W_MEM_INIT: mem_t(0 to N-1)(M*A_DTW-1 downto 0) := (others=>(others=>'0'));
+        B_MEM_INIT: mem_t(0 to M-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'))
     );
     port(
         clk: in std_logic;
@@ -32,26 +32,28 @@ entity piping_linear is
 end entity;
 
 architecture RTL of piping_linear is
+    constant M_P: positive := (M+P-1)/P;
+    constant N_P: positive := (N+P-1)/P;
 
-    constant NN: positive := clog2((N+P-1)/P);
-    constant MM: positive := clog2((M+P-1)/P);
+    constant W_RAM_ADW: positive := clog2(N_P);
+    constant B_RAM_ADW: positive := clog2(M_P);
     constant MUL_NUM: positive:= 4;
     constant ADD_NUM: positive:= 1;
 
-    signal w_ram_control_o_valid: sl_array_t(0 to M-1);
-    signal w_ram_control_o_ready: sl_array_t(0 to M-1);
+    signal w_ram_control_o_valid: sl_array_t(0 to M_P-1);
+    signal w_ram_control_o_ready: sl_array_t(0 to M_P-1);
     signal w_ram_control_b: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
-    signal w_ram_control_c: slv_array_t(0 to P*M-1)(A_DTW-1 downto 0);
+    signal w_ram_control_c: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
 
     signal w_ram_re: std_logic;
-    signal w_ram_addr: std_logic_vector(NN-1 downto 0);
-    signal w_ram_q: std_logic_vector(P*M*A_DTW-1 downto 0);
-    signal w_ram_rd: slv_array_t(0 to P*M-1)(A_DTW-1 downto 0);
+    signal w_ram_addr: std_logic_vector(W_RAM_ADW-1 downto 0);
+    signal w_ram_q: std_logic_vector(M*A_DTW-1 downto 0);
+    signal w_ram_rd: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
 
-    signal mul_o_valid: sl_array_t(0 to M-1);
-    signal mul_o_ready: sl_array_t(0 to M-1);
-    signal mul_a: slv_array_t(0 to P*M-1)(A_DTW-1 downto 0);
-    signal mul_c: slv_array_t(0 to P*M-1)(A_DTW-1 downto 0);
+    signal mul_o_valid: sl_array_t(0 to M_P-1);
+    signal mul_o_ready: sl_array_t(0 to M_P-1);
+    signal mul_a: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+    signal mul_c: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
 
     signal sum_o_valid: std_logic;
     signal sum_o_ready: std_logic;
@@ -63,7 +65,7 @@ architecture RTL of piping_linear is
     signal b_ram_control_c: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
 
     signal b_ram_re: std_logic;
-    signal b_ram_addr: std_logic_vector(MM-1 downto 0);
+    signal b_ram_addr: std_logic_vector(B_RAM_ADW-1 downto 0);
     signal b_ram_q: std_logic_vector(P*1*A_DTW-1 downto 0);
     signal b_ram_rd: slv_array_t(0 to P*1-1)(A_DTW-1 downto 0);
 
@@ -77,7 +79,7 @@ begin
         N => N,
         M => M,
         A_DTW => A_DTW,
-        ADR_DTW => NN
+        ADR_DTW => W_RAM_ADW
     )port map(
         clk => clk,
         rstn => rstn,
@@ -97,9 +99,9 @@ begin
     );
 
     w_ram: entity work.ram1rw generic map(
-        DTW=>P*M*A_DTW,
-        ADW=>NN,
-        DEPTH=>(N+P-1)/P,
+        DTW=>M*A_DTW,
+        ADW=>W_RAM_ADW,
+        DEPTH=>N,
         MEM_INIT=>W_MEM_INIT
     )port map(
         clk=>clk,
@@ -111,10 +113,10 @@ begin
     );
 
     process (all) begin
-        for mm in 0 to m-1 loop
-            for pp in 0 to p-1 loop
-                w_ram_rd(mm*p+pp) <= w_ram_q((mm*p+pp+1)*a_dtw-1 downto (mm*p+pp)*a_dtw);
-                mul_a(mm*p+pp) <= w_ram_control_b(pp);
+        for mm in 0 to M_P-1 loop
+            for pp in 0 to P-1 loop
+                w_ram_rd(mm*P+pp) <= w_ram_q((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW);
+                mul_a(mm*P+pp) <= w_ram_control_b(pp);
             end loop;
         end loop;
     end process;
@@ -160,9 +162,9 @@ begin
     b_ram_control: entity work.piping_ram_control generic map(
         P => P,
         N => M,
-        M => 1,
+        M => P,
         A_DTW => A_DTW,
-        ADR_DTW => MM
+        ADR_DTW => B_RAM_ADW
     )port map(
         clk => clk,
         rstn => rstn,
@@ -183,8 +185,8 @@ begin
 
     b_ram: entity work.ram1rw generic map(
         DTW=>P*A_DTW,
-        ADW=>MM,
-        DEPTH=>(M+P-1)/P,
+        ADW=>B_RAM_ADW,
+        DEPTH=>M,
         MEM_INIT=>B_MEM_INIT
     )port map(
         clk=>clk,
@@ -197,8 +199,8 @@ begin
 
     process (all) begin
         for mm in 0 to 1-1 loop
-            for pp in 0 to p-1 loop
-                b_ram_rd(mm*p+pp) <= b_ram_q((mm*p+pp+1)*a_dtw-1 downto (mm*p+pp)*a_dtw);
+            for pp in 0 to P-1 loop
+                b_ram_rd(mm*P+pp) <= b_ram_q((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW);
             end loop;
         end loop;
     end process;

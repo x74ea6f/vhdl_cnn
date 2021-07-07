@@ -158,7 +158,7 @@ begin
         end if;
     end process;
 
-    o_done <= '1' when o_count=O_COUNT_MAX_SLV else '0';
+    o_done <= '1' when o_count=O_COUNT_MAX_SLV and o_ready='1' else '0';
     self_clear <= clear or o_done;
 
     o_valid <= o_valid_val;

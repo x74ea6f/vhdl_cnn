@@ -22,6 +22,9 @@ entity piping_linear_tb1 is
 end entity;
 
 architecture SIM of piping_linear_tb1 is
+    constant M_P: positive := (M+P-1)/P;
+    constant N_P: positive := (N+P-1)/P;
+
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
     signal clear: std_logic := '0';
@@ -66,18 +69,20 @@ begin
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        for i in 0 to N/P loop
+        for i in 0 to (N+P-1)/P loop
             i_valid <= '1';
             o_ready <= '1';
             for pp in 0 to P-1 loop
                 a(pp) <= std_logic_vector(to_unsigned(i*P+pp, A_DTW));
             end loop;
             wait_clock(clk, 1);
+            wait for 1 ns;
             if i_ready='0' then
                 wait until i_ready='1';
             end if;
         end loop;
         i_valid <= '0';
+        wait_clock(clk, 100); -- wait clock rising, 5times
         o_ready <= '0';
 
         wait_clock(clk, 100); -- wait clock rising, 5times

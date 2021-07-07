@@ -17,23 +17,26 @@ entity piping_sum_tb1 is
         M: positive:= 8; -- Input/Output Number
         N: positive:= 8; -- Input/Output Depth
         AB_DTW: positive:= 8; -- Input A Data Width
-        SFT_NUM: natural := 2 -- Shift Number
+        SFT_NUM: natural := 3 -- Shift Number
     );
 end entity;
 
 architecture SIM of piping_sum_tb1 is
+    constant M_P: positive := (M+P-1)/P;
+    constant N_P: positive := (N+P-1)/P;
+
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
     signal clear: std_logic := '0';
-    signal i_valid: sl_array_t(0 to M-1):=(others=>'0');
-    signal i_ready: sl_array_t(0 to M-1):=(others=>'0');
+    signal i_valid: sl_array_t(0 to M_P-1):=(others=>'0');
+    signal i_ready: sl_array_t(0 to M_P-1):=(others=>'0');
     signal o_valid: std_logic:='0';
     signal o_ready: std_logic:='0';
-    signal a: slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal a: slv_array_t(0 to M-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
     signal b: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
 
-    signal sum: integer_vector(0 to P*M-1):= (others=>0);
-    signal exp: slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0);
+    signal sum: integer_vector(0 to M-1):= (others=>0);
+    signal exp: slv_array_t(0 to M-1)(AB_DTW-1 downto 0);
     signal o_count: integer:=0;
 begin
     piping_sum: entity work.piping_sum generic map(
@@ -62,7 +65,7 @@ begin
     process (clk)
     begin
         if rising_edge(clk) then
-            for mm in 0 to M-1 loop
+            for mm in 0 to M_P-1 loop
                 for pp in 0 to P-1 loop
                     if clear='1' then
                         sum(mm*P+pp) <= 0;
@@ -88,7 +91,7 @@ begin
             return ret;
         end function;
     begin
-        for mm in 0 to M-1 loop
+        for mm in 0 to M_P-1 loop
             for pp in 0 to P-1 loop
                 exp(mm*P+pp) <= make_exp(sum(mm*P+pp));
             end loop;
@@ -96,7 +99,7 @@ begin
     end process;
 
     process
-        variable i_count: integer_vector(0 to M-1):=(others=>0);
+        variable i_count: integer_vector(0 to M_P-1):=(others=>0);
         variable i_valid_val: std_logic;
         -- variable o_count: integer:= 0;
     begin
@@ -108,8 +111,8 @@ begin
         for k in 0 to 100 loop
 
             o_ready <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-            for mm in 0 to M-1 loop
-                if i_count(mm)<N then
+            for mm in 0 to M_P-1 loop
+                if i_count(mm)<N_P then
                     i_valid_val := '1' when unsigned(rand_slv(2)) >= "01" else '0';
                     i_valid(mm) <= i_valid_val;
                     if i_valid_val='1' then

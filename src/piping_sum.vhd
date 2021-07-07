@@ -1,5 +1,5 @@
 -- Sum
--- (P*M)*N to (P)*N
+-- M/P*N to N/P
 library ieee;
 library work;
 use work.piping_pkg.all;
@@ -21,35 +21,37 @@ entity piping_sum is
         rstn: in std_logic;
 
         clear: in std_logic;
-        i_valid: in sl_array_t(0 to M-1);
-        i_ready: out sl_array_t(0 to M-1);
+        i_valid: in sl_array_t(0 to (M+P-1)/P-1);
+        i_ready: out sl_array_t(0 to (M+P-1)/P-1);
         o_valid: out std_logic;
         o_ready: in std_logic;
 
-        a: in slv_array_t(0 to P*M-1)(AB_DTW-1 downto 0);
+        a: in slv_array_t(0 to M-1)(AB_DTW-1 downto 0);
         b: out slv_array_t(0 to P-1)(AB_DTW-1 downto 0)
     );
 end entity;
 
 architecture RTL of piping_sum is
+    constant M_P: positive := (M+P-1)/P;
+    constant N_P: positive := (N+P-1)/P;
 
-    constant I_COUNT_DTW: positive := clog2(N);
-    constant O_COUNT_DTW: positive := clog2(M);
+    constant I_COUNT_DTW: positive := clog2(N_P);
+    constant O_COUNT_DTW: positive := clog2(M_P);
     constant I_COUNT_MAX_SLV: std_logic_vector(I_COUNT_DTW-1 downto 0)
-        := std_logic_vector(to_unsigned(N-1, I_COUNT_DTW));
+        := std_logic_vector(to_unsigned(N_P-1, I_COUNT_DTW));
     constant O_COUNT_MAX_SLV: std_logic_vector(O_COUNT_DTW-1 downto 0)
-        := std_logic_vector(to_unsigned(M-1, O_COUNT_DTW));
+        := std_logic_vector(to_unsigned(M_P-1, O_COUNT_DTW));
 
     constant SUM_DTW: positive := AB_DTW + I_COUNT_DTW;
 
-    signal sum_val: slv_array_t(0 to P*M-1)(SUM_DTW-1 downto 0);
+    signal sum_val: slv_array_t(0 to M-1)(SUM_DTW-1 downto 0);
     signal out_ok: std_logic;
 
-    signal i_ready_val: sl_array_t(0 to M-1);
+    signal i_ready_val: sl_array_t(0 to M_P-1);
     signal o_valid_val: std_logic;
     signal b_val: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
 
-    signal i_count: slv_array_t(0 to M-1)(I_COUNT_DTW-1 downto 0);
+    signal i_count: slv_array_t(0 to M_P-1)(I_COUNT_DTW-1 downto 0);
     signal o_count: std_logic_vector(O_COUNT_DTW-1 downto 0);
 
     signal o_done: std_logic;
@@ -82,12 +84,12 @@ begin
     -- Input Count
     process (clk, rstn) begin
         if rstn='0' then
-            for mm in 0 to M-1 loop
+            for mm in 0 to M_P-1 loop
                 i_count(mm) <= (others=>'0');
                 i_ready_val(mm) <= '1';
             end loop;
         elsif rising_edge(clk) then
-            for mm in 0 to M-1 loop
+            for mm in 0 to M_P-1 loop
                 if self_clear='1' then
                     i_count(mm) <= (others=>'0');
                     i_ready_val(mm) <= '1';
@@ -110,7 +112,7 @@ begin
         variable out_ok_val: std_logic;
     begin
         out_ok_val := '1';
-        for mm in 0 to M-1 loop
+        for mm in 0 to M_P-1 loop
             out_ok_val := out_ok_val when i_count(mm)=I_COUNT_MAX_SLV else '0';
         end loop;
         out_ok <= out_ok_val;
@@ -119,11 +121,11 @@ begin
     -- Sum
     process (clk, rstn) begin
         if rstn='0' then
-            for mm in 0 to P*M-1 loop
+            for mm in 0 to M-1 loop
                 sum_val(mm) <= (others=>'0');
             end loop;
         elsif rising_edge(clk) then
-            for mm in 0 to M-1 loop
+            for mm in 0 to M_P-1 loop
                 for pp in 0 to P-1 loop
                     if self_clear='1' then
                         sum_val(mm*P+pp) <= (others=>'0');

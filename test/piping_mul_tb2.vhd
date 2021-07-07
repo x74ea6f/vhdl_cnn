@@ -24,17 +24,18 @@ entity piping_mul_tb2 is
 end entity;
 
 architecture SIM of piping_mul_tb2 is
+    constant N_P: positive:= (N+P-1)/P;
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
-    signal i_ready: sl_array_t(0 to N-1):=(others=>'0');
-    signal i_valid: sl_array_t(0 to N-1):=(others=>'0');
-    signal o_ready: sl_array_t(0 to N-1):=(others=>'0');
-    signal o_valid: sl_array_t(0 to N-1):=(others=>'0');
-    signal a: slv_array_t(0 to P*N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal b: slv_array_t(0 to P*N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal c: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
+    signal i_ready: sl_array_t(0 to N_P-1):=(others=>'0');
+    signal i_valid: sl_array_t(0 to N_P-1):=(others=>'0');
+    signal o_ready: sl_array_t(0 to N_P-1):=(others=>'0');
+    signal o_valid: sl_array_t(0 to N_P-1):=(others=>'0');
+    signal a: slv_array_t(0 to N-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal b: slv_array_t(0 to N-1)(B_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal c: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 
-    signal exp: slv_array_t(0 to P*N-1)(C_DTW-1 downto 0);
+    signal exp: slv_array_t(0 to N-1)(C_DTW-1 downto 0);
 begin
     piping_mul: entity work.piping_mul generic map(
         P=>P,
@@ -83,7 +84,7 @@ begin
             return ret;
         end function;
     begin
-        for i in 0 to N-1 loop
+        for i in 0 to N_P-1 loop
             if i_valid(i)='1' and i_ready(i)='1' then
                 for pp in 0 to P-1 loop
                     exp(i*P+pp) <= cal_exp(a(i*P+pp), b(i*P+pp));
@@ -100,7 +101,7 @@ begin
         wait_clock(clk, 5); -- wait clock rising, 5times
 
         for k in 0 to 100 loop
-            for i in 0 to N-1 loop
+            for i in 0 to N_P-1 loop
                 if o_valid(i)='1' then
                     for pp in 0 to P-1 loop
                         check(c(i*P+pp), exp(i*P+pp), "DATA" + (i*P+pp), True);
@@ -108,7 +109,7 @@ begin
                 end if;
             end loop;
 
-            for i in 0 to N-1 loop
+            for i in 0 to N_P-1 loop
                 i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
                 o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
                 for pp in 0 to P-1 loop

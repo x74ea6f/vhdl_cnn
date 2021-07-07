@@ -16,7 +16,8 @@ entity piping_sum_tb1 is
         P: positive:= 1; -- Parallel
         M: positive:= 8; -- Input/Output Number
         N: positive:= 8; -- Input/Output Depth
-        AB_DTW: positive:= 8; -- Input A Data Width
+        A_DTW: positive:= 8*2-1; -- Input A Data Width
+        B_DTW: positive:= 8; -- Input A Data Width
         SFT_NUM: natural := 3 -- Shift Number
     );
 end entity;
@@ -32,18 +33,19 @@ architecture SIM of piping_sum_tb1 is
     signal i_ready: sl_array_t(0 to M_P-1):=(others=>'0');
     signal o_valid: std_logic:='0';
     signal o_ready: std_logic:='0';
-    signal a: slv_array_t(0 to M-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal b: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+    signal a: slv_array_t(0 to M-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal b: slv_array_t(0 to P-1)(B_DTW-1 downto 0);
 
     signal sum: integer_vector(0 to M-1):= (others=>0);
-    signal exp: slv_array_t(0 to M-1)(AB_DTW-1 downto 0);
+    signal exp: slv_array_t(0 to M-1)(B_DTW-1 downto 0);
     signal o_count: integer:=0;
 begin
     piping_sum: entity work.piping_sum generic map(
         P=>P,
         M=>M,
         N=>N,
-        AB_DTW=>AB_DTW,
+        A_DTW=>A_DTW,
+        B_DTW=>B_DTW,
         SFT_NUM=>SFT_NUM
     )port map(
         clk => clk,
@@ -79,15 +81,15 @@ begin
 
     process (all)
         function make_exp(s: integer) return std_logic_vector is
-            variable ret: std_logic_vector(AB_DTW-1 downto 0);
+            variable ret: std_logic_vector(B_DTW-1 downto 0);
             variable s_rl: real;
         begin
             s_rl := real(s);
             s_rl := s_rl/(2.0**SFT_NUM); -- shift
             s_rl := floor(s_rl + 0.5); -- round
-            s_rl := maximum(-2.0**(AB_DTW-1), s_rl); -- clip
-            s_rl := minimum(2.0**(AB_DTW-1)-1.0, s_rl); -- clip
-            ret := std_logic_vector(to_signed(integer(s_rl), AB_DTW));
+            s_rl := maximum(-2.0**(B_DTW-1), s_rl); -- clip
+            s_rl := minimum(2.0**(B_DTW-1)-1.0, s_rl); -- clip
+            ret := std_logic_vector(to_signed(integer(s_rl), B_DTW));
             return ret;
         end function;
     begin
@@ -117,7 +119,7 @@ begin
                     i_valid(mm) <= i_valid_val;
                     if i_valid_val='1' then
                         for pp in 0 to P-1 loop
-                            a(mm*P+pp) <= rand_slv(AB_DTW);
+                            a(mm*P+pp) <= rand_slv(A_DTW);
                         end loop;
                         i_count(mm) := i_count(mm) + 1;
                     end if;

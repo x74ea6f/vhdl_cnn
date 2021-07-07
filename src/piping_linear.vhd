@@ -35,6 +35,7 @@ end entity;
 architecture RTL of piping_linear is
     constant M_P: positive := (M+P-1)/P;
     constant N_P: positive := (N+P-1)/P;
+    constant MUL_DTW: positive:= A_DTW*2 - 1;
 
     constant W_RAM_ADW: positive := clog2(N_P);
     constant B_RAM_ADW: positive := clog2(M_P);
@@ -52,7 +53,7 @@ architecture RTL of piping_linear is
     signal mul_o_valid: sl_array_t(0 to M_P-1);
     signal mul_o_ready: sl_array_t(0 to M_P-1);
     signal mul_a: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
-    signal mul_c: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+    signal mul_c: slv_array_t(0 to M-1)(MUL_DTW-1 downto 0);
 
     signal sum_o_valid: std_logic;
     signal sum_o_ready: std_logic;
@@ -125,9 +126,9 @@ begin
         N=>M,
         A_DTW=>A_DTW,
         B_DTW=>A_DTW,
-        C_DTW=>A_DTW,
+        C_DTW=>MUL_DTW,
         CAL_NUM=>MUL_NUM,
-        SFT_NUM=>7
+        SFT_NUM=>0
     )port map(
         clk => clk,
         rstn => rstn,
@@ -144,8 +145,9 @@ begin
         P=>P,
         M=>M,
         N=>N,
-        AB_DTW=>A_DTW,
-        SFT_NUM=>0
+        A_DTW=>MUL_DTW,
+        B_DTW=>A_DTW,
+        SFT_NUM=>A_DTW-1
     )port map(
         clk => clk,
         rstn => rstn,

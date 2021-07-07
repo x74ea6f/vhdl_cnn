@@ -13,7 +13,8 @@ entity piping_sum is
         P: positive:= 1; -- Parallel
         M: positive:= 8; -- Input/Output Number
         N: positive:= 8; -- Input/Output Depth
-        AB_DTW: positive:= 8; -- Input A Data Width
+        A_DTW: positive:= 8*2-1; -- Input A Data Width
+        B_DTW: positive:= 8; -- Input B Data Width
         SFT_NUM: natural := 3 -- Shift Number
     );
     port(
@@ -26,8 +27,8 @@ entity piping_sum is
         o_valid: out std_logic;
         o_ready: in std_logic;
 
-        a: in slv_array_t(0 to M-1)(AB_DTW-1 downto 0);
-        b: out slv_array_t(0 to P-1)(AB_DTW-1 downto 0)
+        a: in slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+        b: out slv_array_t(0 to P-1)(B_DTW-1 downto 0)
     );
 end entity;
 
@@ -42,14 +43,14 @@ architecture RTL of piping_sum is
     constant O_COUNT_MAX_SLV: std_logic_vector(O_COUNT_DTW-1 downto 0)
         := std_logic_vector(to_unsigned(M_P-1, O_COUNT_DTW));
 
-    constant SUM_DTW: positive := AB_DTW + I_COUNT_DTW;
+    constant SUM_DTW: positive := A_DTW + I_COUNT_DTW;
 
     signal sum_val: slv_array_t(0 to M-1)(SUM_DTW-1 downto 0);
     signal out_ok: std_logic;
 
     signal i_ready_val: sl_array_t(0 to M_P-1);
     signal o_valid_val: std_logic;
-    signal b_val: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+    signal b_val: slv_array_t(0 to P-1)(B_DTW-1 downto 0);
 
     signal i_count: slv_array_t(0 to M_P-1)(I_COUNT_DTW-1 downto 0);
     signal o_count: std_logic_vector(O_COUNT_DTW-1 downto 0);
@@ -67,14 +68,14 @@ architecture RTL of piping_sum is
         variable offset: natural;
         variable v_sum: signed(SUM_DTW-1 downto 0);
         variable v_sft: signed(SUM_DTW-SFT_NUM-1 downto 0);
-        variable v_ret: signed(AB_DTW-1 downto 0);
-        variable ret: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+        variable v_ret: signed(B_DTW-1 downto 0);
+        variable ret: slv_array_t(0 to P-1)(B_DTW-1 downto 0);
     begin
         offset := to_integer(unsigned(o_count))*P;
         for pp in 0 to P-1 loop
             v_sum := signed(sum_val(offset + pp));
             v_sft := v_sum when SFT_NUM=0 else f_round(v_sum, v_sft'length);
-            v_ret := f_clip(v_sft, AB_DTW);
+            v_ret := f_clip(v_sft, B_DTW);
             ret(pp) := std_logic_vector(v_ret);
         end loop;
         return ret;

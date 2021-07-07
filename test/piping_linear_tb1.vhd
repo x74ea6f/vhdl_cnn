@@ -10,11 +10,14 @@ use work.str_lib.all;
 use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
+
 use work.fc1_rom.all;
+use work.input_data.all;
 
 entity piping_linear_tb1 is
     generic(
-        P: positive:= 4; -- Data Parallel
+        P: positive:= 1; -- Data Parallel
+        -- P: positive:= 4; -- Data Parallel
         N: positive:= 8*7*7; -- N, Data Depth
         M: positive:= 32; -- MxN
         A_DTW: positive:= 8 -- Input/Output A Data Width
@@ -41,9 +44,8 @@ begin
         N => N,
         M => M,
         A_DTW => A_DTW,
-        -- W_MEM_INIT => (others=>(others=>'0')),
         W_MEM_INIT => FC1_W,
-        B_MEM_INIT => (others=>(others=>'0'))
+        B_MEM_INIT => FC1_B
     )port map(
         clk => clk,
         rstn => rstn,
@@ -69,11 +71,13 @@ begin
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        for i in 0 to (N+P-1)/P loop
+        for i in 0 to (N+P-1)/P-1 loop
             i_valid <= '1';
             o_ready <= '1';
+
             for pp in 0 to P-1 loop
-                a(pp) <= std_logic_vector(to_unsigned(i*P+pp, A_DTW));
+                a(pp) <= X_FC1_PRE(i*P+pp);
+                -- a(pp) <= std_logic_vector(to_unsigned(i*P+pp, A_DTW));
             end loop;
             wait_clock(clk, 1);
             wait for 1 ns;

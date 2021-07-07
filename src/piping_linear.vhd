@@ -13,8 +13,9 @@ entity piping_linear is
         N: positive:= 8*7*7; -- N, Data Depth
         M: positive:= 32; -- MxN
         A_DTW: positive:= 8; -- Input/Output A Data Width
+        MUL_NUM: positive:= 4; -- Number of Multiplier = MUL_NUM*P
         W_MEM_INIT: mem_t(0 to N-1)(M*A_DTW-1 downto 0) := (others=>(others=>'0'));
-        B_MEM_INIT: mem_t(0 to M-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'))
+        B_MEM_INIT: mem_t(0 to (M+P-1)/P-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'))
     );
     port(
         clk: in std_logic;
@@ -37,8 +38,6 @@ architecture RTL of piping_linear is
 
     constant W_RAM_ADW: positive := clog2(N_P);
     constant B_RAM_ADW: positive := clog2(M_P);
-    constant MUL_NUM: positive:= 4;
-    constant ADD_NUM: positive:= 1;
 
     signal w_ram_control_o_valid: sl_array_t(0 to M_P-1);
     signal w_ram_control_o_ready: sl_array_t(0 to M_P-1);
@@ -128,7 +127,7 @@ begin
         B_DTW=>A_DTW,
         C_DTW=>A_DTW,
         CAL_NUM=>MUL_NUM,
-        SFT_NUM=>0
+        SFT_NUM=>7
     )port map(
         clk => clk,
         rstn => rstn,
@@ -186,7 +185,7 @@ begin
     b_ram: entity work.ram1rw generic map(
         DTW=>P*A_DTW,
         ADW=>B_RAM_ADW,
-        DEPTH=>M,
+        DEPTH=>M_P,
         MEM_INIT=>B_MEM_INIT
     )port map(
         clk=>clk,
@@ -211,7 +210,7 @@ begin
         A_DTW=>A_DTW,
         B_DTW=>A_DTW,
         C_DTW=>A_DTW,
-        CAL_NUM=>ADD_NUM,
+        CAL_NUM=>1,
         SFT_NUM=>0
     )port map(
         clk => clk,

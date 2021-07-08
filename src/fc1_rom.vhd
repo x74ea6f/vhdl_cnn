@@ -74,7 +74,6 @@ package body fc1_rom is
     end function;
 
     constant FC1_W: mem_t(0 to FC1_M-1)(FC1_N*FC1_DTW-1 downto 0) := intv_to_mem(FC1_W_INT, FC1_DTW, FC1_N, FC1_M);
-    -- constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0) := (others=>(others=>'0'));
     constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0) := intv_to_mem(FC1_B_INT, FC1_DTW, FC1_P, 1);
 
 end package body;

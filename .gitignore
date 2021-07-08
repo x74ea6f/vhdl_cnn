@@ -25,4 +25,7 @@ model_sim/*
 py/*.csv
 py/*.txt
 py/*.pt
+py/*/*.csv
+py/*/*.txt
+py/*/*.pt
 py/data/*

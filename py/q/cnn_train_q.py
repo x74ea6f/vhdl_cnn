@@ -5,6 +5,9 @@ import torchvision
 import torchvision.transforms as transforms
 from sklearn.metrics import accuracy_score, confusion_matrix
 
+## ADD Q
+from torch.quantization import QuantStub, DeQuantStub
+
 
 # 1. ネットワークモデルの定義
 class Net(nn.Module):
@@ -35,7 +38,15 @@ class Net(nn.Module):
         # 出力クラス数まで縮小
         self.fc2 = nn.Linear(32, num_output_classes)
 
+        ## ADD Q
+        self.quant = QuantStub()
+        self.dequant = DeQuantStub()
+        
+
     def forward(self, x):
+        ## ADD Q
+        x = self.quant(x)
+
         # 1層目の畳み込み
         # 活性化関数 (activation) はReLU
         x = self.conv1(x)
@@ -57,6 +68,9 @@ class Net(nn.Module):
         x = self.relu3(x)
         x = self.fc2(x)
 
+        ## ADD Q
+        x = self.dequant(x)
+
         return x
 
 
@@ -64,67 +78,79 @@ net = Net()
 
 # 2. データセットの読み出し法の定義
 # MNIST の学習・テストデータの取得
-trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transforms.ToTensor())
-testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transforms.ToTensor())
+trainset = torchvision.datasets.MNIST(root='../data', train=True, download=True, transform=transforms.ToTensor())
+testset = torchvision.datasets.MNIST(root='../data', train=False, download=True, transform=transforms.ToTensor())
 
 # データの読み出し方法の定義
 # 1stepの学習・テストごとに16枚ずつ画像を読みだす
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=16, shuffle=True)
 testloader = torch.utils.data.DataLoader(testset, batch_size=16, shuffle=False)
 
-# ロス関数、最適化器の定義
-loss_func = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
 
 # 3. 学習
-# データセット内の全画像を10回使用するまでループ
-for epoch in range(10):
-    running_loss = 0
+def train(net, trainloader):
+    # ロス関数、最適化器の定義
+    loss_func = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
+    
+    # データセット内の全画像を10回使用するまでループ
+    for epoch in range(10):
+        running_loss = 0
+    
+        # データセット内でループ
+        for i, data in enumerate(trainloader, 0):
+            # 入力バッチの読み込み (画像、正解ラベル)
+            inputs, labels = data
+    
+            # 最適化器をゼロ初期化
+            optimizer.zero_grad()
+    
+            # 入力画像をモデルに通して出力ラベルを取得
+            outputs = net(inputs)
+    
+            # 正解との誤差の計算 + 誤差逆伝搬
+            loss = loss_func(outputs, labels)
+            loss.backward()
+    
+            # 誤差を用いてモデルの最適化
+            optimizer.step()
+            running_loss += loss.item()
+            if i % 1000 == 999:
+                print('[%d, %5d] loss: %.3f' %
+                      (epoch + 1, i + 1, running_loss / 1000))
+                running_loss = 0.0
 
-    # データセット内でループ
-    for i, data in enumerate(trainloader, 0):
-        # 入力バッチの読み込み (画像、正解ラベル)
-        inputs, labels = data
-
-        # 最適化器をゼロ初期化
-        optimizer.zero_grad()
-
-        # 入力画像をモデルに通して出力ラベルを取得
-        outputs = net(inputs)
-
-        # 正解との誤差の計算 + 誤差逆伝搬
-        loss = loss_func(outputs, labels)
-        loss.backward()
-
-        # 誤差を用いてモデルの最適化
-        optimizer.step()
-        running_loss += loss.item()
-        if i % 1000 == 999:
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 1000))
-            running_loss = 0.0
+train(net, trainloader)
 
 # 4. テスト
-ans = []
-pred = []
-for i, data in enumerate(testloader, 0):
-    inputs, labels = data
+def evaluate(net, testloader, n=None):
+    ans = []
+    pred = []
+    for i, data in enumerate(testloader, 0):
+        inputs, labels = data
 
-    outputs = net(inputs)
+        outputs = net(inputs)
 
-    ans += labels.tolist()
-    pred += torch.argmax(outputs, 1).tolist()
+        ans += labels.tolist()
+        pred += torch.argmax(outputs, 1).tolist()
 
+        if n is not None and n<i:
+            break
+    return ans, pred
+
+ans, pred = evaluate(net, testloader)
 print('accuracy:', accuracy_score(ans, pred))
 print('confusion matrix:')
 print(confusion_matrix(ans, pred))
 
-# 5. モデルの保存
-# PyTorchから普通に読み出すためのモデルファイル
-torch.save(net.state_dict(), 'model.pt')
+def save_model(net):
+    # 5. モデルの保存
+    # PyTorchから普通に読み出すためのモデルファイル
+    torch.save(net.state_dict(), 'model.pt')
 
-# libtorch (C++ API) から読み出すためのTorch Script Module を保存
-example = torch.rand(1, 1, 28, 28)
-traced_script_module = torch.jit.trace(net, example)
-traced_script_module.save('traced_model.pt')
+    # libtorch (C++ API) から読み出すためのTorch Script Module を保存
+    example = torch.rand(1, 1, 28, 28)
+    traced_script_module = torch.jit.trace(net, example)
+    traced_script_module.save('traced_model.pt')
 
+save_model(net)

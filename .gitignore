@@ -22,4 +22,7 @@ test/tmp.vcd
 
 ## kari
 model_sim/*
-py/*
+py/*.csv
+py/*.txt
+py/*.pt
+py/data/*

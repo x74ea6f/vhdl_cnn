@@ -15,7 +15,9 @@ basefiles="\
 ../src/piping_mul.vhd \
 ../src/piping_sum.vhd \
 ../src/piping_ram_control.vhd \
+../src/piping_scale.vhd \
 ../src/piping_linear.vhd \
+../src/fc1_rom.vhd \
 "
 
 ## Usage

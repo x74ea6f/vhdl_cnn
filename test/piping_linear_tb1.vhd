@@ -45,7 +45,9 @@ begin
         M => M,
         A_DTW => A_DTW,
         W_MEM_INIT => FC1_W,
-        B_MEM_INIT => FC1_B
+        B_MEM_INIT => FC1_B,
+        SCALE => FC1_SCALE,
+        SCALE_SFT => FC1_SCALE_SFT
     )port map(
         clk => clk,
         rstn => rstn,

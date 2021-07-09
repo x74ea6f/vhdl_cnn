@@ -52,9 +52,11 @@ package fc1_rom is
     constant FC1_B_INT: integer_vector(0 to FC1_N-1) := (
 -16,-19,11,16,3,-12,-6,8,13,6,-8,17,-13,-15,8,3,13,28,9,-18,-15,-5,-24,33,22,-12,-13,4,-2,-3,1,2
     );
+    constant FC1_SCALE: positive := 189;
+    constant FC1_SCALE_SFT: positive := 16;
 
-constant FC1_W: mem_t(0 to FC1_M-1)(FC1_N*FC1_DTW-1 downto 0);
-constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0);
+    constant FC1_W: mem_t(0 to FC1_M-1)(FC1_N*FC1_DTW-1 downto 0);
+    constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0);
 
 end package;
 

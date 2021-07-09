@@ -15,7 +15,9 @@ entity piping_linear is
         A_DTW: positive:= 8; -- Input/Output A Data Width
         MUL_NUM: positive:= 4; -- Number of Multiplier = MUL_NUM*P
         W_MEM_INIT: mem_t(0 to N-1)(M*A_DTW-1 downto 0) := (others=>(others=>'0'));
-        B_MEM_INIT: mem_t(0 to (M+P-1)/P-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'))
+        B_MEM_INIT: mem_t(0 to (M+P-1)/P-1)(P*A_DTW-1 downto 0) := (others=>(others=>'0'));
+        SCALE: positive:= 2; -- 0 to 255
+        SCALE_SFT: positive:= 1 -- Shift
     );
     port(
         clk: in std_logic;
@@ -74,6 +76,8 @@ architecture RTL of piping_linear is
     signal add_o_ready: sl_array_t(0 to 1-1);
     signal add_c: slv_array_t(0 to P-1)(SUM_DTW-1 downto 0);
 
+    signal scale_o_valid: sl_array_t(0 to 1-1);
+    signal scale_o_ready: sl_array_t(0 to 1-1);
 begin
 
     -- W RAM Read
@@ -238,8 +242,27 @@ begin
         c => add_c
     );
 
-    add_o_ready(0) <= o_ready;
-    o_valid <= add_o_valid(0);
+    -- Scaling
+    piping_scale: entity work.piping_scale generic map(
+        P=>P,
+        N=>1,
+        A_DTW=>SUM_DTW,
+        B_DTW=>A_DTW,
+        SCALE=>SCALE,
+        SFT_NUM=>SCALE_SFT
+    )port map(
+        clk => clk,
+        rstn => rstn,
+        i_ready => add_o_ready,
+        i_valid => add_o_valid,
+        o_ready => scale_o_ready,
+        o_valid => scale_o_valid,
+        a => add_c,
+        b => b
+    );
+
+    scale_o_ready(0) <= o_ready;
+    o_valid <= scale_o_valid(0);
 
 
 end architecture;

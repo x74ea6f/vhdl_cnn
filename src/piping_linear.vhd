@@ -36,6 +36,7 @@ architecture RTL of piping_linear is
     constant M_P: positive := (M+P-1)/P;
     constant N_P: positive := (N+P-1)/P;
     constant MUL_DTW: positive:= A_DTW*2 - 1;
+    constant SUM_DTW: positive:= A_DTW*2 - 1;
 
     constant W_RAM_ADW: positive := clog2(N_P);
     constant B_RAM_ADW: positive := clog2(M_P);
@@ -57,11 +58,11 @@ architecture RTL of piping_linear is
 
     signal sum_o_valid: std_logic;
     signal sum_o_ready: std_logic;
-    signal sum_b: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
+    signal sum_b: slv_array_t(0 to P-1)(SUM_DTW-1 downto 0);
 
     signal b_ram_control_o_valid: sl_array_t(0 to 0);
     signal b_ram_control_o_ready: sl_array_t(0 to 0);
-    signal b_ram_control_b: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
+    signal b_ram_control_b: slv_array_t(0 to P-1)(SUM_DTW-1 downto 0);
     signal b_ram_control_c: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
 
     signal b_ram_re: std_logic;
@@ -71,6 +72,7 @@ architecture RTL of piping_linear is
 
     signal add_o_valid: sl_array_t(0 to 1-1);
     signal add_o_ready: sl_array_t(0 to 1-1);
+    signal add_c: slv_array_t(0 to P-1)(SUM_DTW-1 downto 0);
 
 begin
 
@@ -79,7 +81,8 @@ begin
         P => P,
         N => N,
         M => M,
-        A_DTW => A_DTW,
+        AB_DTW => A_DTW,
+        C_DTW => A_DTW,
         ADR_DTW => W_RAM_ADW
     )port map(
         clk => clk,
@@ -151,8 +154,8 @@ begin
         M=>M,
         N=>N,
         A_DTW=>MUL_DTW,
-        B_DTW=>A_DTW,
-        SFT_NUM=>A_DTW-1
+        B_DTW=>SUM_DTW,
+        SFT_NUM=>0
     )port map(
         clk => clk,
         rstn => rstn,
@@ -170,7 +173,8 @@ begin
         P => P,
         N => M,
         M => P,
-        A_DTW => A_DTW,
+        AB_DTW => SUM_DTW,
+        C_DTW => A_DTW,
         ADR_DTW => B_RAM_ADW
     )port map(
         clk => clk,
@@ -217,9 +221,9 @@ begin
     piping_add: entity work.piping_add generic map(
         P=>P,
         N=>1,
-        A_DTW=>A_DTW,
+        A_DTW=>SUM_DTW,
         B_DTW=>A_DTW,
-        C_DTW=>A_DTW,
+        C_DTW=>SUM_DTW,
         CAL_NUM=>1,
         SFT_NUM=>0
     )port map(
@@ -231,7 +235,7 @@ begin
         o_valid => add_o_valid,
         a => b_ram_control_b,
         b => b_ram_control_c,
-        c => b
+        c => add_c
     );
 
     add_o_ready(0) <= o_ready;

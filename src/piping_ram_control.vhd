@@ -12,7 +12,8 @@ entity piping_ram_control is
         P: positive:= 1; -- Data Parallel
         N: positive:= 8; -- N, Data Depth
         M: positive:= 8; -- MxN
-        A_DTW: positive:= 8; -- Input/Output A Data Width
+        AB_DTW: positive:= 8; -- Input/Output A,B Data Width
+        C_DTW: positive:= 8; -- Output C(RAM) Data Width
         ADR_DTW: positive:= 3 -- clog2(N/P)
     );
     port(
@@ -25,13 +26,13 @@ entity piping_ram_control is
         o_valid: out sl_array_t(0 to (M+P-1)/P-1);
         o_ready: in sl_array_t(0 to (M+P-1)/P-1);
 
-        a: in slv_array_t(0 to P-1)(A_DTW-1 downto 0);
-        b: out slv_array_t(0 to P-1)(A_DTW-1 downto 0);
-        c: out slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+        a: in slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+        b: out slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+        c: out slv_array_t(0 to M-1)(C_DTW-1 downto 0);
 
         ram_re: out std_logic;
         ram_addr: out std_logic_vector(ADR_DTW-1 downto 0);
-        ram_rd: in slv_array_t(0 to M-1)(A_DTW-1 downto 0)
+        ram_rd: in slv_array_t(0 to M-1)(C_DTW-1 downto 0)
     );
 end entity;
 
@@ -45,8 +46,8 @@ architecture RTL of piping_ram_control is
     signal o_valid_val: sl_array_t(0 to M_P-1);
     signal ram_re_val: std_logic;
     signal ram_addr_val: std_logic_vector(ADR_DTW-1 downto 0);
-    signal b_val: slv_array_t(0 to P-1)(A_DTW-1 downto 0);
-    signal c_val: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+    signal b_val: slv_array_t(0 to P-1)(AB_DTW-1 downto 0);
+    signal c_val: slv_array_t(0 to M-1)(C_DTW-1 downto 0);
 
     signal ram_re_val_d: std_logic;
 

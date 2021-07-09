@@ -16,7 +16,8 @@ entity piping_ram_control_tb1 is
         P: positive:= 2; -- Data Parallel
         N: positive:= 8; -- N, Data Depth
         M: positive:= 8; -- MxN
-        A_DTW: positive:= 8; -- Input/Output A Data Width
+        AB_DTW: positive:= 8; -- Input/Output A,B Data Width
+        C_DTW: positive:= 8; -- Output C(RAM) Data Width
         ADR_DTW: positive:= 3 -- clog2(N/P)
     );
 end entity;
@@ -33,17 +34,17 @@ architecture SIM of piping_ram_control_tb1 is
     signal i_ready: std_logic;
     signal o_valid: sl_array_t(0 to M_P-1);
     signal o_ready: sl_array_t(0 to M_P-1):=(others=>'0');
-    signal a: slv_array_t(0 to P-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal b: slv_array_t(0 to P-1)(A_DTW-1 downto 0):=(others=>(others=>'0'));
-    signal c: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+    signal a: slv_array_t(0 to P-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal b: slv_array_t(0 to P-1)(AB_DTW-1 downto 0):=(others=>(others=>'0'));
+    signal c: slv_array_t(0 to M-1)(C_DTW-1 downto 0);
 
     signal ram_re: std_logic;
     signal ram_addr: std_logic_vector(ADR_DTW-1 downto 0);
-    signal ram_rd: slv_array_t(0 to M-1)(A_DTW-1 downto 0);
+    signal ram_rd: slv_array_t(0 to M-1)(C_DTW-1 downto 0);
 
     signal ram_ce: std_logic;
-    signal ram_d: std_logic_vector(M*A_DTW-1 downto 0):=(others=>'0');
-    signal ram_q: std_logic_vector(M*A_DTW-1 downto 0);
+    signal ram_d: std_logic_vector(M*C_DTW-1 downto 0):=(others=>'0');
+    signal ram_q: std_logic_vector(M*C_DTW-1 downto 0);
     signal ram_a: std_logic_vector(ADR_DTW-1 downto 0);
 
     signal ram_we: std_logic:= '0';
@@ -55,8 +56,8 @@ architecture SIM of piping_ram_control_tb1 is
         for adr in 0 to DEPTH-1 loop
             for mm in 0 to M_P-1 loop
                 for pp in 0 to P-1 loop
-                    ret(adr)((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW) :=
-                        std_logic_vector(to_unsigned(adr*M_P*P+mm*P+pp, A_DTW));
+                    ret(adr)((mm*P+pp+1)*C_DTW-1 downto (mm*P+pp)*C_DTW) :=
+                        std_logic_vector(to_unsigned(adr*M_P*P+mm*P+pp, C_DTW));
                 end loop;
             end loop;
         end loop;
@@ -68,7 +69,8 @@ begin
         P => P,
         N => N,
         M => M,
-        A_DTW => A_DTW,
+        AB_DTW => AB_DTW,
+        C_DTW => C_DTW,
         ADR_DTW => ADR_DTW
     )port map(
         clk => clk,
@@ -89,10 +91,10 @@ begin
     );
 
     w_raml: entity work.ram1rw generic map(
-        DTW=>M*A_DTW,
+        DTW=>M*C_DTW,
         ADW=>ADR_DTW,
         DEPTH=>(N+P-1)/P,
-        MEM_INIT=>make_mem_init(M*A_DTW, (N+P-1)/P)
+        MEM_INIT=>make_mem_init(M*C_DTW, (N+P-1)/P)
     )port map(
         clk=>clk,
         ce=>ram_ce,
@@ -120,8 +122,8 @@ begin
         --     ram_waddr <= std_logic_vector(to_unsigned(adr, ADR_DTW));
         --     for mm in 0 to M-1 loop
         --         for pp in 0 to P-1 loop
-        --             ram_d((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW) <=
-        --                 std_logic_vector(to_unsigned(adr*M*P+mm*P+pp, A_DTW));
+        --             ram_d((mm*P+pp+1)*C_DTW-1 downto (mm*P+pp)*C_DTW) <=
+        --                 std_logic_vector(to_unsigned(adr*M*P+mm*P+pp, C_DTW));
         --         end loop;
         --     end loop;
         --     wait_clock(clk, 1);
@@ -133,7 +135,7 @@ begin
             i_valid <= rand_slv(1)(0);
             o_ready <= (others=>(rand_slv(1)(0)));
             for pp in 0 to P-1 loop
-                a(pp) <= std_logic_vector(to_unsigned(nn, A_DTW));
+                a(pp) <= std_logic_vector(to_unsigned(nn, AB_DTW));
             end loop;
             -- for mm in 0 to M-1 loop
             --     o_ready(mm) <= rand_slv(1)(0);
@@ -160,7 +162,7 @@ begin
     process (all) begin
         for mm in 0 to M_P-1 loop
             for pp in 0 to P-1 loop
-                ram_rd(mm*P+pp) <= ram_q((mm*P+pp+1)*A_DTW-1 downto (mm*P+pp)*A_DTW);
+                ram_rd(mm*P+pp) <= ram_q((mm*P+pp+1)*C_DTW-1 downto (mm*P+pp)*C_DTW);
             end loop;
         end loop;
     end process;

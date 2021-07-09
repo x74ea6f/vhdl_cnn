@@ -49,7 +49,7 @@ architecture RTL of piping_add is
     function cal_main(a, b: std_logic_vector) return std_logic_vector is
         constant O_DTW: positive := maximum(a'length, b'length) + 1;
         variable v_a: signed(A_DTW-1 downto 0);
-        variable v_b: signed(A_DTW-1 downto 0);
+        variable v_b: signed(B_DTW-1 downto 0);
         variable v_cal: signed(O_DTW-1 downto 0);
         variable v_sft: signed(O_DTW-SFT_NUM-1 downto 0);
         variable v_ret: signed(C_DTW-1 downto 0);

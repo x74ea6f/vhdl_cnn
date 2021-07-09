@@ -49,7 +49,7 @@ architecture RTL of piping_mul is
     -- 乗算・丸め・クリップ
     function cal_main(a, b: std_logic_vector) return std_logic_vector is
         variable v_a: signed(A_DTW-1 downto 0);
-        variable v_b: signed(A_DTW-1 downto 0);
+        variable v_b: signed(B_DTW-1 downto 0);
         variable v_mul: signed(A_DTW+B_DTW-1 downto 0);
         variable v_sft: signed(A_DTW+B_DTW-SFT_NUM-1 downto 0);
         variable v_ret: signed(C_DTW-1 downto 0);

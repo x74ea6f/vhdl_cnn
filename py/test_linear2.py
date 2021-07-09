@@ -16,7 +16,7 @@ print("W", w_org.shape)
 print("B", b_org.shape)
 
 x_s_org = np.dot(w_org, x_pre_org)
-##TMP x_s = np.dot(w_org, x_pre_org) + b_org
+##TMP x_s_org = np.dot(w_org, x_pre_org) + b_org
 print("X_S", x_s_org.shape)
 print(x_s_org)
 print(x_s_org - exp_org)

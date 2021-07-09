@@ -142,6 +142,7 @@ architecture RTL of piping_mul is
 
 begin
 
+G_N: if N>1 generate
     tran_ok <= i_valid and (not o_valid);
     -- tran_ok <= i_valid and o_ready;
     select_combination <= next_select(select_combination_pre, tran_ok);
@@ -207,5 +208,24 @@ begin
     end process;
 
     i_ready <= i_ready_val;
+else generate -- N=1 Normal
+    process (clk, rstn) begin
+        if rstn='0' then
+            c_val <= (others=>(others => '0'));
+            o_valid_val <= (others=>'0');
+        elsif rising_edge(clk) then
+            o_valid_val <= i_valid;
+            for pp in 0 to P-1 loop
+                c_val(pp) <= cal_main(a(pp), b(pp));
+            end loop;
+        end if;
+    end process;
+
+    i_ready_val <= o_ready;
+
+    o_valid <= o_valid_val;
+    c <= c_val;
+    i_ready <= i_ready_val;
+end generate;
 
 end architecture;

@@ -74,6 +74,7 @@ architecture RTL of piping_linear is
 
 begin
 
+    -- W RAM Read
     w_ram_control: entity work.piping_ram_control generic map(
         P => P,
         N => N,
@@ -98,6 +99,7 @@ begin
         ram_rd => w_ram_rd
     );
 
+    -- W RAM
     w_ram: entity work.ram1rw generic map(
         DTW=>M*A_DTW,
         ADW=>W_RAM_ADW,
@@ -112,6 +114,7 @@ begin
         q=>w_ram_q
     );
 
+    -- Convert RAM to MUL
     process (all) begin
         for mm in 0 to M_P-1 loop
             for pp in 0 to P-1 loop
@@ -121,6 +124,7 @@ begin
         end loop;
     end process;
 
+    -- Mul of W*X
     piping_mul: entity work.piping_mul generic map(
         P=>P,
         N=>M,
@@ -141,6 +145,7 @@ begin
         c => mul_c
     );
 
+    -- Sum of W*X
     piping_sum: entity work.piping_sum generic map(
         P=>P,
         M=>M,
@@ -160,6 +165,7 @@ begin
         b => sum_b
     );
 
+    -- B RAM Read
     b_ram_control: entity work.piping_ram_control generic map(
         P => P,
         N => M,
@@ -184,6 +190,7 @@ begin
         ram_rd => b_ram_rd
     );
 
+    -- B RAM
     b_ram: entity work.ram1rw generic map(
         DTW=>P*A_DTW,
         ADW=>B_RAM_ADW,
@@ -206,6 +213,7 @@ begin
         end loop;
     end process;
 
+    -- +B
     piping_add: entity work.piping_add generic map(
         P=>P,
         N=>1,

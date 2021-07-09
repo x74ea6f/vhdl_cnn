@@ -95,6 +95,16 @@ begin
         wait;
     end process;
 
+    process(clk) begin
+        if rising_edge(clk) then
+            if o_valid='1' and o_ready='1' then
+                for pp in 0 to P-1 loop
+                    print(to_str(b(pp), DEC_S));
+                end loop;
+            end if;
+        end if;
+    end process;
+
     process(all) begin
         if(falling_edge(o_valid)=True) then
             assert o_ready='1'

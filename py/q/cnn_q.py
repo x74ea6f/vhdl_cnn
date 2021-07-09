@@ -40,7 +40,9 @@ class Net(nn.Module):
         ## ADD Q
         self.quant = QuantStub()
         self.dequant = DeQuantStub()
-        
+
+        ## to_csv X
+        self.save_csv = None
 
     def forward(self, x):
         ## ADD Q
@@ -64,7 +66,9 @@ class Net(nn.Module):
         x = x.reshape([x.shape[0], -1])
 
         # 全結合層
+        if self.save_csv: self.save_csv(x, "x_fc1_pre.q.csv")
         x = self.fc1(x)
+        if self.save_csv: self.save_csv(x, "x_fc1_out.q.csv")
         x = self.relu3(x)
         x = self.fc2(x)
 

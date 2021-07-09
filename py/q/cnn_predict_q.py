@@ -30,6 +30,7 @@ def save_csv(x: torch.Tensor, name: str):
 
 
 net = Net()
+net.save_csv = save_csv
 
 # 2. データセットの読み出し法の定義
 # MNIST の学習・テストデータの取得

@@ -11,16 +11,14 @@ package piping_pkg is
     type mem_t is array(natural range <>) of std_logic_vector;
 
     -- sl_array_t演算
-    function "and"(l,r: sl_array_t) return sl_array_t;
-    function "not"(l: sl_array_t) return sl_array_t;
+    function "and"(l, r : sl_array_t) return sl_array_t;
+    function "not"(l : sl_array_t) return sl_array_t;
 
 end package;
-
-
 package body piping_pkg is
 
-    function "and"(l,r: sl_array_t) return sl_array_t is
-        variable ret: sl_array_t(l'range);
+    function "and"(l, r : sl_array_t) return sl_array_t is
+        variable ret : sl_array_t(l'range);
     begin
         for i in ret'range loop
             ret(i) := l(i) and r(i);
@@ -28,8 +26,8 @@ package body piping_pkg is
         return ret;
     end function;
 
-    function "not"(l: sl_array_t) return sl_array_t is
-        variable ret: sl_array_t(l'range);
+    function "not"(l : sl_array_t) return sl_array_t is
+        variable ret : sl_array_t(l'range);
     begin
         for i in ret'range loop
             ret(i) := not l(i);

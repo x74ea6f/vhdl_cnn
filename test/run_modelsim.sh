@@ -18,6 +18,7 @@ basefiles="\
 ../src/piping_scale.vhd \
 ../src/piping_linear.vhd \
 ../src/fc1_rom.vhd \
+../src/fc2_rom.vhd \
 "
 
 ## Usage

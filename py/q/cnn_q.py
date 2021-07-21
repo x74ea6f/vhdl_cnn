@@ -70,7 +70,9 @@ class Net(nn.Module):
         x = self.fc1(x)
         if self.save_csv: self.save_csv(x, "x_fc1_out.q.csv")
         x = self.relu3(x)
+        if self.save_csv: self.save_csv(x, "x_fc2_pre.q.csv")
         x = self.fc2(x)
+        if self.save_csv: self.save_csv(x, "x_fc2_out.q.csv")
 
         ## ADD Q
         x = self.dequant(x)

@@ -5,7 +5,7 @@ use work.piping_pkg.all;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.numeric_lib.all;
--- use work.str_lib.all;
+use work.str_lib.all;
 
 entity piping_scale is
     generic (
@@ -14,7 +14,8 @@ entity piping_scale is
         A_DTW : positive := 8; -- Input A Data Width
         B_DTW : positive := 8; -- Input B Data Width
         SCALE : positive := 2; -- 0 to 255
-        SFT_NUM : positive := 1 -- Shift
+        SFT_NUM : positive := 1; -- Shift
+        OUT_UNSIGNED: boolean := True
     );
     port (
         clk : in std_logic;
@@ -39,7 +40,6 @@ architecture RTL of piping_scale is
 
     -- 計算メイン処理
     function cal_main(a : std_logic_vector) return std_logic_vector is
-        constant O_DTW : positive := maximum(a'length, b'length) + 1;
         variable v_a : signed(A_DTW - 1 downto 0);
         variable v_scale : unsigned(7 downto 0);
         variable v_cal : signed(A_DTW + 8 - 1 downto 0);
@@ -51,9 +51,37 @@ architecture RTL of piping_scale is
         v_cal := f_mul(v_a, v_scale);
         v_sft := v_cal when SFT_NUM = 0 else
             f_round(v_cal, v_sft'length);
-        v_ret := f_clip(v_sft, B_DTW);
+        if (A_DTW+8-SFT_NUM > B_DTW)then
+            v_ret := f_clip(v_sft, B_DTW);
+        else
+            v_ret := resize(v_sft, B_DTW);
+        end if;
         return std_logic_vector(v_ret);
     end function;
+
+    --[TODO] ここのビット幅計算怪しい
+    function cal_main_unsigned(a : std_logic_vector) return std_logic_vector is
+        variable v_a : signed(A_DTW - 1 downto 0);
+        variable v_aa : unsigned(A_DTW - 2 downto 0);
+        variable v_scale : unsigned(7 downto 0);
+        variable v_cal : unsigned(A_DTW + 8 - 2 downto 0);
+        variable v_sft : unsigned(A_DTW + 8 - SFT_NUM - 2 downto 0);
+        variable v_ret : unsigned(B_DTW - 1 downto 0);
+    begin
+        v_a := maximum(to_signed(0, A_DTW), signed(a));
+        v_aa := unsigned(v_a(A_DTW-2 downto 0));
+        v_scale := to_unsigned(SCALE, 8);
+        v_cal := f_mul(v_aa, v_scale);
+        v_sft := v_cal when SFT_NUM = 0 else
+            f_round(v_cal, v_sft'length);
+        if (A_DTW+8-SFT_NUM > B_DTW)then
+            v_ret := f_clip(v_sft, B_DTW);
+        else
+            v_ret := resize(v_sft, B_DTW);
+        end if;
+        return std_logic_vector(v_ret);
+    end function;
+
 
 begin
 
@@ -63,9 +91,11 @@ begin
             o_valid_val <= (others => '0');
         elsif rising_edge(clk) then
             o_valid_val <= i_valid;
-            for pp in 0 to P - 1 loop
-                b_val(pp) <= cal_main(a(pp));
-            end loop;
+            if i_valid(0)='1' then
+                for pp in 0 to P - 1 loop
+                    b_val(pp) <= cal_main_unsigned(a(pp)) when OUT_UNSIGNED=True else cal_main(a(pp));
+                end loop;
+            end if;
         end if;
     end process;
 

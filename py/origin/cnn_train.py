@@ -64,8 +64,8 @@ net = Net()
 
 # 2. データセットの読み出し法の定義
 # MNIST の学習・テストデータの取得
-trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transforms.ToTensor())
-testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transforms.ToTensor())
+trainset = torchvision.datasets.MNIST(root='../data', train=True, download=True, transform=transforms.ToTensor())
+testset = torchvision.datasets.MNIST(root='../data', train=False, download=True, transform=transforms.ToTensor())
 
 # データの読み出し方法の定義
 # 1stepの学習・テストごとに16枚ずつ画像を読みだす

@@ -5,7 +5,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.piping_pkg.all;
 
-package fc1_rom is
+package fc2_rom is
     constant FC2_M: positive := 32;
     constant FC2_N: positive := 10;
     constant FC2_DTW: positive := 8;
@@ -27,7 +27,7 @@ package fc1_rom is
     );
 
     constant FC2_B_INT: integer_vector(0 to FC2_N-1) := (
--16,-19,11,16,3,-12,-6,8,13,6,-8,17,-13,-15,8,3,13,28,9,-18,-15,-5,-24,33,22,-12,-13,4,-2,-3,1,2
+-32,-20,-28,14,-4,30,-5,9,-13,-36
     );
     constant FC2_SCALE: positive := 296;
     constant FC2_SCALE_SFT: positive := 16;
@@ -37,7 +37,7 @@ package fc1_rom is
 
 end package;
 
-package body fc1_rom is
+package body fc2_rom is
     -- with change ColRow
     function intv_to_mem(intv: integer_vector; constant DTW,P,M: positive) return mem_t is
         variable slv: std_logic_vector(P*DTW-1 downto 0);

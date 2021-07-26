@@ -22,12 +22,22 @@ def save_csv(x: torch.Tensor, name: str):
     if x.dtype==torch.qint8 or x.dtype==torch.quint8:
         print(f"Scale({name}):{x.q_scale()}, DTYPE={x.dtype}")
         scale_name = re.sub(r"\.csv", "_scale.csv", name)
-        pd.DataFrame([x.q_scale(),]).to_csv(scale_name, header=False, index=False)
+        v = x.q_scale()
+        sft = 16
+        vv = round(v * (2**sft))
+        pd.DataFrame([v, vv, sft]).to_csv(scale_name, header=False, index=False)
         x = torch.int_repr(x)
     x_np = x.detach().numpy()
     x_df = pd.DataFrame(x_np)
     x_df.to_csv(name, header=False, index=False)
 
+def save_bias(x: torch.Tensor, scale, name: str):
+    b = x.detach().numpy()
+    b = b / scale
+    b = np.round(b)
+    b = np.clip(b, -128, 127)
+    b = b.astype(np.int8)
+    pd.DataFrame(b).to_csv(name, header=False, index=False)
 
 net = Net()
 net.save_csv = save_csv
@@ -62,6 +72,11 @@ save_csv(net.fc1.weight().data, "fc1_w.q.csv");
 print("Bias:", net.fc1.bias().size())
 #print(net.fc1.bias())
 save_csv(net.fc1.bias().data, "fc1_b.q.csv");
+save_bias(net.fc1.bias().data, net.fc1.weight().q_scale(),  "fc1_b.q_scaled.csv")
+
+save_csv(net.fc2.weight().data, "fc2_w.q.csv");
+save_csv(net.fc2.bias().data, "fc2_b.q.csv");
+save_bias(net.fc2.bias().data, net.fc2.weight().q_scale(),  "fc2_b.q_scaled.csv")
 
 for k in net.state_dict().keys():
     print(f"---{k}---")

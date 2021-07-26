@@ -64,13 +64,14 @@ torch.quantization.convert(net, inplace=True)
 ## Show paramter
 print("--ALL--")
 print(net.state_dict().keys())
-print("--FC1--")
-print(net.fc1)
-print("Weight:", net.fc1.weight().size())
-#print(net.fc1.weight())
+## print("--FC1--")
+## print(net.fc1)
+## print("Weight:", net.fc1.weight().size())
+## print("Bias:", net.fc1.bias().size())
+
+##-- Save Parameter
+## RTLはbias加算後にscaleを乗算している。そのためbiasをscaleで除算しておく。
 save_csv(net.fc1.weight().data, "fc1_w.q.csv");
-print("Bias:", net.fc1.bias().size())
-#print(net.fc1.bias())
 save_csv(net.fc1.bias().data, "fc1_b.q.csv");
 save_bias(net.fc1.bias().data, net.fc1.weight().q_scale(),  "fc1_b.q_scaled.csv")
 
@@ -78,13 +79,13 @@ save_csv(net.fc2.weight().data, "fc2_w.q.csv");
 save_csv(net.fc2.bias().data, "fc2_b.q.csv");
 save_bias(net.fc2.bias().data, net.fc2.weight().q_scale(),  "fc2_b.q_scaled.csv")
 
-for k in net.state_dict().keys():
-    print(f"---{k}---")
-    print(net.state_dict()[k])
-    try:
-        print("Scale:", net.state_dict()[k].q_scale())
-    except:
-        pass
+# for k in net.state_dict().keys():
+#     print(f"---{k}---")
+#     print(net.state_dict()[k])
+#     try:
+#         print("Scale:", net.state_dict()[k].q_scale())
+#     except:
+#         pass
     
 
 # 4. テスト

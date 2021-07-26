@@ -50,11 +50,13 @@ class Net(nn.Module):
 
         # 1層目の畳み込み
         # 活性化関数 (activation) はReLU
+        ## print("SIZE=", x.size()) # [1,1,28,28]
         if self.save_csv: self.save_csv(x[0][0], f"x_conv1_pre.q.csv")
         x = self.conv1(x)
+        ## print("SIZE=", x.size()) # [1,4,28,28]
         if self.save_csv:
             for i in range(4):
-                self.save_csv(x[0][i], f"x_conv1_pre{i}.q.csv")
+                self.save_csv(x[0][i], f"x_conv1_post{i}.q.csv")
         x = self.relu1(x)
 
         # 縮小

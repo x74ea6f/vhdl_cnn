@@ -29,8 +29,8 @@ package fc2_rom is
     constant FC2_B_INT: integer_vector(0 to FC2_N-1) := (
 -32,-20,-28,14,-4,30,-5,9,-13,-36
     );
-    constant FC2_SCALE: positive := 296;
-    constant FC2_SCALE_SFT: positive := 16;
+    constant FC2_SCALE: positive := 148;
+    constant FC2_SCALE_SFT: positive := 15;
 
     constant FC2_W: mem_t(0 to FC2_M-1)(FC2_N*FC2_DTW-1 downto 0);
     constant FC2_B: mem_t(0 to FC2_N/FC2_P-1)(FC2_P*FC2_DTW-1 downto 0);

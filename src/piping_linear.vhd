@@ -14,7 +14,7 @@ entity piping_linear is
         M : positive := 32; -- MxN
         A_DTW : positive := 8; -- Input/Output A Data Width
         MUL_NUM : positive := 4; -- Number of Multiplier = MUL_NUM*P
-        W_MEM_INIT : mem_t(0 to N - 1)(M * A_DTW - 1 downto 0) := (others => (others => '0'));
+        W_MEM_INIT : mem_t(0 to (N + P - 1)/P - 1)(P * M * A_DTW - 1 downto 0) := (others => (others => '0'));
         B_MEM_INIT : mem_t(0 to (M + P - 1)/P - 1)(P * A_DTW - 1 downto 0) := (others => (others => '0'));
         SCALE : positive := 2; -- 0 to 255
         SCALE_SFT : positive := 1 -- Shift
@@ -43,20 +43,20 @@ architecture RTL of piping_linear is
     constant W_RAM_ADW : positive := clog2(N_P);
     constant B_RAM_ADW : positive := clog2(M_P);
 
-    signal w_ram_control_o_valid : sl_array_t(0 to M_P - 1);
-    signal w_ram_control_o_ready : sl_array_t(0 to M_P - 1);
+    signal w_ram_control_o_valid : sl_array_t(0 to M - 1);
+    signal w_ram_control_o_ready : sl_array_t(0 to M - 1);
     signal w_ram_control_b : slv_array_t(0 to P - 1)(A_DTW - 1 downto 0);
-    signal w_ram_control_c : slv_array_t(0 to M - 1)(A_DTW - 1 downto 0);
+    signal w_ram_control_c : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
 
     signal w_ram_re : std_logic;
     signal w_ram_addr : std_logic_vector(W_RAM_ADW - 1 downto 0);
-    signal w_ram_q : std_logic_vector(M * A_DTW - 1 downto 0);
-    signal w_ram_rd : slv_array_t(0 to M - 1)(A_DTW - 1 downto 0);
+    signal w_ram_q : std_logic_vector(P*M * A_DTW - 1 downto 0);
+    signal w_ram_rd : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
 
-    signal mul_o_valid : sl_array_t(0 to M_P - 1);
-    signal mul_o_ready : sl_array_t(0 to M_P - 1);
-    signal mul_a : slv_array_t(0 to M - 1)(A_DTW - 1 downto 0);
-    signal mul_c : slv_array_t(0 to M - 1)(MUL_DTW - 1 downto 0);
+    signal mul_o_valid : sl_array_t(0 to M - 1);
+    signal mul_o_ready : sl_array_t(0 to M - 1);
+    signal mul_a : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
+    signal mul_c : slv_array_t(0 to P*M - 1)(MUL_DTW - 1 downto 0);
 
     signal sum_o_valid : std_logic;
     signal sum_o_ready : std_logic;
@@ -108,9 +108,9 @@ begin
 
     -- W RAM
     w_ram : entity work.ram1rw generic map(
-        DTW => M * A_DTW,
+        DTW => P * M * A_DTW,
         ADW => W_RAM_ADW,
-        DEPTH => N,
+        DEPTH => N_P,
         MEM_INIT => W_MEM_INIT
         )port map(
         clk => clk,
@@ -123,7 +123,7 @@ begin
 
     -- Convert RAM to MUL
     process (all) begin
-        for mm in 0 to M_P - 1 loop
+        for mm in 0 to M - 1 loop
             for pp in 0 to P - 1 loop
                 w_ram_rd(mm * P + pp) <= w_ram_q((mm * P + pp + 1) * A_DTW - 1 downto (mm * P + pp) * A_DTW);
                 mul_a(mm * P + pp) <= w_ram_control_b(pp);
@@ -134,7 +134,7 @@ begin
     -- Mul of W*X
     piping_mul : entity work.piping_mul generic map(
         P => P,
-        N => M,
+        N => M*P,
         A_DTW => A_DTW,
         B_DTW => A_DTW,
         C_DTW => MUL_DTW,
@@ -176,7 +176,7 @@ begin
     b_ram_control : entity work.piping_ram_control generic map(
         P => P,
         N => M,
-        M => P,
+        M => 1,
         AB_DTW => SUM_DTW,
         C_DTW => A_DTW,
         ADR_DTW => B_RAM_ADW

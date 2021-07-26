@@ -13,6 +13,11 @@ package input_data is
     );
     constant X_FC1_PRE: mem_t(0 to 8*7*7-1)(8-1 downto 0);
 
+    constant X_FC1_POST_INT: integer_vector(0 to 32-1):=(
+0,3,4,5,2,8,9,5,5,2,0,9,14,0,0,7,2,7,8,0,0,7,5,0,4,5,5,0,9,6,9,8
+    );
+    constant X_FC1_POST: mem_t(0 to 32-1)(8-1 downto 0);
+
     constant X_FC2_PRE_INT: integer_vector(0 to 32-1) := (
 0,3,4,5,2,8,9,5,5,2,0,9,14,0,0,7,2,7,8,0,0,7,5,0,4,5,5,0,9,6,9,8
     );
@@ -35,6 +40,8 @@ package body input_data is
     end function;
 
     constant X_FC1_PRE: mem_t(0 to 8*7*7-1)(8-1 downto 0) := intv_to_mem(X_FC1_PRE_INT, 8, 1);
+    constant X_FC1_POST: mem_t(0 to 32-1)(8-1 downto 0) := intv_to_mem(X_FC1_POST_INT, 8, 1);
+
     constant X_FC2_PRE: mem_t(0 to 32-1)(8-1 downto 0) := intv_to_mem(X_FC2_PRE_INT, 8, 1);
 
 end package body;

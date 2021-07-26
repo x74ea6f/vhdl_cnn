@@ -22,12 +22,12 @@ entity piping_sum is
         rstn : in std_logic;
 
         clear : in std_logic;
-        i_valid : in sl_array_t(0 to (M + P - 1)/P - 1);
-        i_ready : out sl_array_t(0 to (M + P - 1)/P - 1);
+        i_valid : in sl_array_t(0 to M - 1);
+        i_ready : out sl_array_t(0 to M - 1);
         o_valid : out std_logic;
         o_ready : in std_logic;
 
-        a : in slv_array_t(0 to M - 1)(A_DTW - 1 downto 0);
+        a : in slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
         b : out slv_array_t(0 to P - 1)(B_DTW - 1 downto 0)
     );
 end entity;
@@ -48,11 +48,11 @@ architecture RTL of piping_sum is
     signal sum_val : slv_array_t(0 to M - 1)(SUM_DTW - 1 downto 0);
     signal out_ok : std_logic;
 
-    signal i_ready_val : sl_array_t(0 to M_P - 1);
+    signal i_ready_val : sl_array_t(0 to M - 1);
     signal o_valid_val : std_logic;
     signal b_val : slv_array_t(0 to P - 1)(B_DTW - 1 downto 0);
 
-    signal i_count : slv_array_t(0 to M_P - 1)(I_COUNT_DTW - 1 downto 0);
+    signal i_count : slv_array_t(0 to M - 1)(I_COUNT_DTW - 1 downto 0);
     signal o_count : std_logic_vector(O_COUNT_DTW - 1 downto 0);
 
     signal o_done : std_logic;
@@ -81,17 +81,28 @@ architecture RTL of piping_sum is
         end loop;
         return ret;
     end function;
+
+
+    function para_sum(a: slv_array_t; offset, P: natural) return std_logic_vector is
+        variable ret: std_logic_vector(SUM_DTW-1 downto 0) := (others=>'0');
+    begin
+        for pp in 0 to P-1 loop
+            ret := f_add_s(ret, a(offset + pp))(SUM_DTW-1 downto 0); -- Not Overflow
+        end loop;
+        return ret;
+    end function;
+
 begin
 
     -- Input Count
     process (clk, rstn) begin
         if rstn = '0' then
-            for mm in 0 to M_P - 1 loop
+            for mm in 0 to M - 1 loop
                 i_count(mm) <= (others => '0');
                 i_ready_val(mm) <= '1';
             end loop;
         elsif rising_edge(clk) then
-            for mm in 0 to M_P - 1 loop
+            for mm in 0 to M - 1 loop
                 if self_clear = '1' then
                     i_count(mm) <= (others => '0');
                     i_ready_val(mm) <= '1';
@@ -114,7 +125,7 @@ begin
         variable out_ok_val : std_logic;
     begin
         out_ok_val := '1';
-        for mm in 0 to M_P - 1 loop
+        for mm in 0 to M - 1 loop
             out_ok_val := out_ok_val when i_count(mm) = I_COUNT_MAX_SLV else
                 '0';
         end loop;
@@ -128,15 +139,12 @@ begin
                 sum_val(mm) <= (others => '0');
             end loop;
         elsif rising_edge(clk) then
-            for mm in 0 to M_P - 1 loop
-                for pp in 0 to P - 1 loop
-                    if self_clear = '1' then
-                        sum_val(mm * P + pp) <= (others => '0');
-                    elsif i_valid(mm) = '1' and i_ready_val(mm) = '1' then
-                        -- elsif i_valid(mm)='1' then
-                        sum_val(mm * P + pp) <= f_add_s(sum_val(mm * P + pp), a(mm * P + pp))(SUM_DTW - 1 downto 0); -- Not Overflow
-                    end if;
-                end loop;
+            for mm in 0 to M - 1 loop
+                if self_clear = '1' then
+                    sum_val(mm) <= (others => '0');
+                elsif i_valid(mm) = '1' and i_ready_val(mm) = '1' then
+                    sum_val(mm) <= f_add_s(sum_val(mm), para_sum(a, mm*P, P))(SUM_DTW - 1 downto 0); -- Not Overflow
+                end if;
             end loop;
         end if;
     end process;

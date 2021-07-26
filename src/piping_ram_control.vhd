@@ -23,16 +23,16 @@ entity piping_ram_control is
         clear : in std_logic;
         i_valid : in std_logic;
         i_ready : out std_logic;
-        o_valid : out sl_array_t(0 to (M + P - 1)/P - 1);
-        o_ready : in sl_array_t(0 to (M + P - 1)/P - 1);
+        o_valid : out sl_array_t(0 to M - 1);
+        o_ready : in sl_array_t(0 to M - 1);
 
         a : in slv_array_t(0 to P - 1)(AB_DTW - 1 downto 0);
         b : out slv_array_t(0 to P - 1)(AB_DTW - 1 downto 0);
-        c : out slv_array_t(0 to M - 1)(C_DTW - 1 downto 0);
+        c : out slv_array_t(0 to M*P - 1)(C_DTW - 1 downto 0);
 
         ram_re : out std_logic;
         ram_addr : out std_logic_vector(ADR_DTW - 1 downto 0);
-        ram_rd : in slv_array_t(0 to M - 1)(C_DTW - 1 downto 0)
+        ram_rd : in slv_array_t(0 to M*P - 1)(C_DTW - 1 downto 0)
     );
 end entity;
 
@@ -43,11 +43,11 @@ architecture RTL of piping_ram_control is
     constant ADR_MAX_SLV : std_logic_vector(ADR_DTW - 1 downto 0) := std_logic_vector(to_unsigned((N + P - 1)/P - 1, ADR_DTW));
 
     signal i_ready_val : std_logic;
-    signal o_valid_val : sl_array_t(0 to M_P - 1);
+    signal o_valid_val : sl_array_t(0 to M - 1);
     signal ram_re_val : std_logic;
     signal ram_addr_val : std_logic_vector(ADR_DTW - 1 downto 0);
     signal b_val : slv_array_t(0 to P - 1)(AB_DTW - 1 downto 0);
-    signal c_val : slv_array_t(0 to M - 1)(C_DTW - 1 downto 0);
+    signal c_val : slv_array_t(0 to M*P - 1)(C_DTW - 1 downto 0);
 
     signal ram_re_val_d : std_logic;
 
@@ -97,7 +97,7 @@ begin
         if rstn = '0' then
             o_valid_val <= (others => '0');
         elsif rising_edge(clk) then
-            for mm in 0 to M_P - 1 loop
+            for mm in 0 to M - 1 loop
                 if ram_re_val = '1' then
                     o_valid_val(mm) <= '1';
                 elsif o_ready(mm) = '1' then

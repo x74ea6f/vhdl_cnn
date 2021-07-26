@@ -9,8 +9,10 @@ package fc1_rom is
     constant FC1_M: positive := 8*7*7;
     constant FC1_N: positive := 32;
     constant FC1_DTW: positive := 8;
-    -- constant FC1_P: positive := 2;
-    constant FC1_P: positive := 2;
+    -- constant FC1_P: positive := 1;
+    constant FC1_P: positive := 1;
+    constant FC1_M_P: positive := (FC1_M + FC1_P - 1)/FC1_P;
+    constant FC1_N_P: positive := (FC1_N + FC1_P - 1)/FC1_P;
 
     -- function intv_to_mem(intv: integer_vector; constant DTW: positive; constant P: positive) return mem_t;
 
@@ -55,27 +57,29 @@ package fc1_rom is
     constant FC1_SCALE: positive := 189;
     constant FC1_SCALE_SFT: positive := 16;
 
-    constant FC1_W: mem_t(0 to FC1_M-1)(FC1_N*FC1_DTW-1 downto 0);
-    constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0);
+    constant FC1_W: mem_t(0 to FC1_M_P-1)(FC1_P*FC1_N*FC1_DTW-1 downto 0);
+    constant FC1_B: mem_t(0 to FC1_N_P-1)(FC1_P*FC1_DTW-1 downto 0);
 
 end package;
 
 package body fc1_rom is
     -- with change ColRow
-    function intv_to_mem(intv: integer_vector; constant DTW,P,M: positive) return mem_t is
-        variable slv: std_logic_vector(P*DTW-1 downto 0);
-        variable ret: mem_t(0 to intv'length/P-1)(P*DTW-1 downto 0);
+    function intv_to_mem(intv: integer_vector; constant DTW,P,N,M: positive) return mem_t is
+        variable slv: std_logic_vector(P*N*DTW-1 downto 0);
+        variable ret: mem_t(0 to (M+P-1)/P-1)(P*N*DTW-1 downto 0);
     begin
         for i in ret'range loop
-            for pp in 0 to P-1 loop
-                slv((pp+1)*DTW-1 downto pp*DTW) := std_logic_vector(to_signed(intv(M*pp+i), DTW));
+            for nn in 0 to N-1 loop
+                for pp in 0 to P-1 loop
+                    slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := std_logic_vector(to_signed(intv(M*nn+i*P+pp), DTW));
+                end loop;
             end loop;
             ret(i) := slv;
         end loop;
         return ret;
     end function;
 
-    constant FC1_W: mem_t(0 to FC1_M-1)(FC1_N*FC1_DTW-1 downto 0) := intv_to_mem(FC1_W_INT, FC1_DTW, FC1_N, FC1_M);
-    constant FC1_B: mem_t(0 to FC1_N/FC1_P-1)(FC1_P*FC1_DTW-1 downto 0) := intv_to_mem(FC1_B_INT, FC1_DTW, FC1_P, 1);
+    constant FC1_W: mem_t(0 to FC1_M_P-1)(FC1_P*FC1_N*FC1_DTW-1 downto 0) := intv_to_mem(FC1_W_INT, FC1_DTW, FC1_P, FC1_N, FC1_M);
+    constant FC1_B: mem_t(0 to FC1_N_P-1)(FC1_P*FC1_DTW-1 downto 0) := intv_to_mem(FC1_B_INT, FC1_DTW, 1, FC1_P, FC1_N_P);
 
 end package body;

@@ -50,7 +50,11 @@ class Net(nn.Module):
 
         # 1層目の畳み込み
         # 活性化関数 (activation) はReLU
+        if self.save_csv: self.save_csv(x[0][0], f"x_conv1_pre.q.csv")
         x = self.conv1(x)
+        if self.save_csv:
+            for i in range(4):
+                self.save_csv(x[0][i], f"x_conv1_pre{i}.q.csv")
         x = self.relu1(x)
 
         # 縮小
@@ -68,11 +72,11 @@ class Net(nn.Module):
         # 全結合層
         if self.save_csv: self.save_csv(x, "x_fc1_pre.q.csv")
         x = self.fc1(x)
-        if self.save_csv: self.save_csv(x, "x_fc1_out.q.csv")
+        if self.save_csv: self.save_csv(x, "x_fc1_post.q.csv")
         x = self.relu3(x)
         if self.save_csv: self.save_csv(x, "x_fc2_pre.q.csv")
         x = self.fc2(x)
-        if self.save_csv: self.save_csv(x, "x_fc2_out.q.csv")
+        if self.save_csv: self.save_csv(x, "x_fc2_post.q.csv")
 
         ## ADD Q
         x = self.dequant(x)

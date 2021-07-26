@@ -9,8 +9,8 @@ package fc1_rom is
     constant FC1_M: positive := 8*7*7;
     constant FC1_N: positive := 32;
     constant FC1_DTW: positive := 8;
-    constant FC1_P: positive := 1;
-    -- constant FC1_P: positive := 4;
+    -- constant FC1_P: positive := 2;
+    constant FC1_P: positive := 2;
 
     -- function intv_to_mem(intv: integer_vector; constant DTW: positive; constant P: positive) return mem_t;
 

@@ -16,8 +16,8 @@ use work.input_data.all;
 
 entity piping_linear_tb1 is
     generic(
-        P: positive:= 1; -- Data Parallel
-        -- P: positive:= 4; -- Data Parallel
+        -- P: positive:= 1; -- Data Parallel
+        P: positive:= 2; -- Data Parallel
         N: positive:= 8*7*7; -- N, Data Depth
         M: positive:= 32; -- MxN
         A_DTW: positive:= 8 -- Input/Output A Data Width

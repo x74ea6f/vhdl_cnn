@@ -224,7 +224,7 @@ begin
     -- +B
     piping_add : entity work.piping_add generic map(
         P => P,
-        N => 1,
+        N => P,
         A_DTW => SUM_DTW,
         B_DTW => A_DTW,
         C_DTW => SUM_DTW,
@@ -245,7 +245,7 @@ begin
     -- Scaling
     piping_scale : entity work.piping_scale generic map(
         P => P,
-        N => 1,
+        N => P,
         A_DTW => SUM_DTW,
         B_DTW => A_DTW,
         SCALE => SCALE,

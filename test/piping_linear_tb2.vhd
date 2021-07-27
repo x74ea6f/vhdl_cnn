@@ -78,8 +78,12 @@ begin
             o_ready <= '1';
 
             for pp in 0 to P-1 loop
-                a(pp) <= X_FC2_PRE(i*P+pp);
-                -- a(pp) <= std_logic_vector(to_unsigned(i*P+pp, A_DTW));
+                if (i*P+pp < X_FC2_PRE'length) then
+                    a(pp) <= X_FC2_PRE(i*P+pp);
+                    -- a(pp) <= std_logic_vector(to_unsigned(i*P+pp, A_DTW));
+                else
+                    a(pp) <= (others=>'0');
+                end if;
             end loop;
             wait_clock(clk, 1);
             wait for 1 ns;
@@ -103,9 +107,11 @@ begin
         if rising_edge(clk) then
             if o_valid='1' and o_ready='1' then
                 for pp in 0 to P-1 loop
-                    check(b(pp), X_FC2_POST(exp_addr), "Output", True);
-                    -- print(to_str(b(pp), DEC_S));
-                    exp_addr := exp_addr + 1;
+                    if(exp_addr<X_FC2_POST'length)then
+                        check(b(pp), X_FC2_POST(exp_addr), "Output", True);
+                        -- print(to_str(b(pp), DEC_S));
+                        exp_addr := exp_addr + 1;
+                    end if;
                 end loop;
             end if;
         end if;

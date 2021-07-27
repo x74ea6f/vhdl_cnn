@@ -70,7 +70,11 @@ package body fc1_rom is
         for i in ret'range loop
             for nn in 0 to N-1 loop
                 for pp in 0 to P-1 loop
-                    slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := std_logic_vector(to_signed(intv(M*nn+i*P+pp), DTW));
+                    if (M*nn+i*P+pp < intv'length) then
+                        slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := std_logic_vector(to_signed(intv(M*nn+i*P+pp), DTW));
+                    else
+                        slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := (others=>'0');
+                    end if;
                 end loop;
             end loop;
             ret(i) := slv;

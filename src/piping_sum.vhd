@@ -73,11 +73,15 @@ architecture RTL of piping_sum is
     begin
         offset := to_integer(unsigned(o_count)) * P;
         for pp in 0 to P - 1 loop
-            v_sum := signed(sum_val(offset + pp));
-            v_sft := v_sum when SFT_NUM = 0 else
-                f_round(v_sum, v_sft'length);
-            v_ret := f_clip(v_sft, B_DTW);
-            ret(pp) := std_logic_vector(v_ret);
+            if (offset+pp<sum_val'length)then
+                v_sum := signed(sum_val(offset + pp));
+                v_sft := v_sum when SFT_NUM = 0 else
+                    f_round(v_sum, v_sft'length);
+                v_ret := f_clip(v_sft, B_DTW);
+                ret(pp) := std_logic_vector(v_ret);
+            else
+                ret(pp) := (others=>'0');
+            end if;
         end loop;
         return ret;
     end function;

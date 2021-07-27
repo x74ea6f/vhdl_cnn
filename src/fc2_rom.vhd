@@ -9,7 +9,7 @@ package fc2_rom is
     constant FC2_M: positive := 32;
     constant FC2_N: positive := 10;
     constant FC2_DTW: positive := 8;
-    constant FC2_P: positive := 1;
+    constant FC2_P: positive := 2;
     constant FC2_M_P: positive := (FC2_M + FC2_P - 1)/FC2_P;
     constant FC2_N_P: positive := (FC2_N + FC2_P - 1)/FC2_P;
 
@@ -48,7 +48,11 @@ package body fc2_rom is
         for i in ret'range loop
             for nn in 0 to N-1 loop
                 for pp in 0 to P-1 loop
-                    slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := std_logic_vector(to_signed(intv(M*nn+i*P+pp), DTW));
+                    if (M*nn+i*P+pp < intv'length) then
+                        slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := std_logic_vector(to_signed(intv(M*nn+i*P+pp), DTW));
+                    else
+                        slv((nn*P+pp+1)*DTW-1 downto (nn*P+pp)*DTW) := (others=>'0');
+                    end if;
                 end loop;
             end loop;
             ret(i) := slv;

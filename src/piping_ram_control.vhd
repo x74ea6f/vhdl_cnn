@@ -49,7 +49,7 @@ architecture RTL of piping_ram_control is
     signal b_val : slv_array_t(0 to P - 1)(AB_DTW - 1 downto 0);
     signal c_val : slv_array_t(0 to M*P - 1)(C_DTW - 1 downto 0);
 
-    signal ram_re_val_d : std_logic;
+    -- signal ram_re_val_d : std_logic;
 
     function f_and_reduce(s : sl_array_t) return std_logic is
         variable ret : std_logic := '1';

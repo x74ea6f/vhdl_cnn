@@ -23,6 +23,11 @@ package input_data is
     );
     constant X_FC2_PRE: mem_t(0 to 32-1)(8-1 downto 0);
 
+    constant X_FC2_POST_INT: integer_vector(0 to 10-1):=(
+0,4,0,0,0,0,0,0,0,0
+    );
+    constant X_FC2_POST: mem_t(0 to 10-1)(8-1 downto 0);
+
 end package;
 
 package body input_data is
@@ -43,5 +48,6 @@ package body input_data is
     constant X_FC1_POST: mem_t(0 to 32-1)(8-1 downto 0) := intv_to_mem(X_FC1_POST_INT, 8, 1);
 
     constant X_FC2_PRE: mem_t(0 to 32-1)(8-1 downto 0) := intv_to_mem(X_FC2_PRE_INT, 8, 1);
+    constant X_FC2_POST: mem_t(0 to 10-1)(8-1 downto 0) := intv_to_mem(X_FC2_POST_INT, 8, 1);
 
 end package body;

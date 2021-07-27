@@ -36,10 +36,10 @@ architecture RTL of piping_sum is
     constant M_P : positive := (M + P - 1)/P;
     constant N_P : positive := (N + P - 1)/P;
 
-    constant I_COUNT_DTW : positive := clog2(N_P);
+    constant I_COUNT_DTW : positive := clog2(N_P+1);
     constant O_COUNT_DTW : positive := clog2(M_P);
     constant I_COUNT_MAX_SLV : std_logic_vector(I_COUNT_DTW - 1 downto 0)
-    := std_logic_vector(to_unsigned(N_P - 1, I_COUNT_DTW));
+    := std_logic_vector(to_unsigned(N_P, I_COUNT_DTW));
     constant O_COUNT_MAX_SLV : std_logic_vector(O_COUNT_DTW - 1 downto 0)
     := std_logic_vector(to_unsigned(M_P - 1, O_COUNT_DTW));
 

@@ -9,8 +9,7 @@ package fc1_rom is
     constant FC1_M: positive := 8*7*7;
     constant FC1_N: positive := 32;
     constant FC1_DTW: positive := 8;
-    -- constant FC1_P: positive := 1;
-    constant FC1_P: positive := 1;
+    constant FC1_P: positive := 2;
     constant FC1_M_P: positive := (FC1_M + FC1_P - 1)/FC1_P;
     constant FC1_N_P: positive := (FC1_N + FC1_P - 1)/FC1_P;
 
@@ -80,6 +79,6 @@ package body fc1_rom is
     end function;
 
     constant FC1_W: mem_t(0 to FC1_M_P-1)(FC1_P*FC1_N*FC1_DTW-1 downto 0) := intv_to_mem(FC1_W_INT, FC1_DTW, FC1_P, FC1_N, FC1_M);
-    constant FC1_B: mem_t(0 to FC1_N_P-1)(FC1_P*FC1_DTW-1 downto 0) := intv_to_mem(FC1_B_INT, FC1_DTW, 1, FC1_P, FC1_N_P);
+    constant FC1_B: mem_t(0 to FC1_N_P-1)(FC1_P*FC1_DTW-1 downto 0) := intv_to_mem(FC1_B_INT, FC1_DTW, FC1_P, 1, FC1_N);
 
 end package body;

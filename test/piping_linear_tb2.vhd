@@ -16,8 +16,7 @@ use work.input_data.all;
 
 entity piping_linear_tb2 is
     generic(
-        P: positive:= 1; -- Data Parallel
-        -- P: positive:= 4; -- Data Parallel
+        -- P: positive:= 1; -- Data Parallel
         N: positive:= 32; -- N, Data Depth
         M: positive:= 10; -- MxN
         A_DTW: positive:= 8 -- Input/Output A Data Width
@@ -25,6 +24,7 @@ entity piping_linear_tb2 is
 end entity;
 
 architecture SIM of piping_linear_tb2 is
+    constant P: positive := FC2_P;
     constant M_P: positive := (M+P-1)/P;
     constant N_P: positive := (N+P-1)/P;
 
@@ -97,11 +97,15 @@ begin
         wait;
     end process;
 
-    process(clk) begin
+    process(clk)
+    variable exp_addr: integer := 0;
+    begin
         if rising_edge(clk) then
             if o_valid='1' and o_ready='1' then
                 for pp in 0 to P-1 loop
-                    print(to_str(b(pp), DEC_S));
+                    check(b(pp), X_FC2_POST(exp_addr), "Output", True);
+                    -- print(to_str(b(pp), DEC_S));
+                    exp_addr := exp_addr + 1;
                 end loop;
             end if;
         end if;

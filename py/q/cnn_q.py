@@ -46,7 +46,10 @@ class Net(nn.Module):
 
     def forward(self, x):
         ## ADD Q
+        print("SIZE=", x.size()) # [1,1,28,28]
+        if self.save_csv: self.save_csv(x[0][0], f"x_quant_pre.q.csv")
         x = self.quant(x)
+        if self.save_csv: self.save_csv(x[0][0], f"x_quant_post.q.csv")
 
         # 1層目の畳み込み
         # 活性化関数 (activation) はReLU

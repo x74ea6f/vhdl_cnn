@@ -19,7 +19,9 @@ entity piping_conv_cal_tb is
         IN_CH : positive := 1; -- Input Channnel
         OUT_CH : positive := 4; -- Output Channnel
         KERNEL_SIZE : positive := 3; -- Kernel Size
-        DTW : positive := 8 -- Data Width
+        IN_DTW : positive := 8; -- Data Width
+        OUT_DTW : positive := 8+4; -- Data Width
+        W_DTW : positive := 8 -- Data Width
     );
 end entity;
 
@@ -79,19 +81,19 @@ architecture SIM of piping_conv_cal_tb is
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     );
 
-    constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(DTW - 1 downto 0) := int2mem(KERNEL_WEIGHT_INT, DTW);
-    constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(DTW - 1 downto 0) := int2mem(X_PRE_INT, DTW);
+    constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := int2mem(KERNEL_WEIGHT_INT, W_DTW);
+    constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(IN_DTW - 1 downto 0) := int2mem(X_PRE_INT, IN_DTW);
 
 
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
-    signal i_valid : sl_array_t(0 to (IN_CH + P - 1)/P - 1);
-    signal i_ready : sl_array_t(0 to (IN_CH + P - 1)/P - 1);
-    signal o_valid : sl_array_t(0 to (OUT_CH + P - 1)/P - 1);
-    signal o_ready : sl_array_t(0 to (OUT_CH + P - 1)/P - 1);
-    signal a : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(DTW - 1 downto 0):=(others=>(others=>'0'));
-    signal b : slv_array_t(0 to OUT_CH * P - 1)(DTW - 1 downto 0);
-    signal exp : slv_array_t(0 to OUT_CH * P - 1)(DTW - 1 downto 0):=(others=>(others=>'0'));
+    signal i_valid : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal i_ready : sl_array_t(0 to 1 - 1);
+    signal o_valid : sl_array_t(0 to 1 - 1);
+    signal o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal a : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
+    signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
+    signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
 
 
@@ -103,7 +105,9 @@ begin
         IN_CH => IN_CH,
         OUT_CH => OUT_CH,
         KERNEL_SIZE => KERNEL_SIZE,
-        DTW => DTW,
+        IN_DTW => IN_DTW,
+        OUT_DTW => OUT_DTW,
+        W_DTW => W_DTW,
         KERNEL_WEIGHT => KERNEL_WEIGHT 
     )port map(
         clk => clk,

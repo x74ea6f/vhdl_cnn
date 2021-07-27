@@ -44,8 +44,6 @@ architecture RTL of piping_conv_cal is
     signal mul_v : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     signal b_v : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal i_ready_v : sl_array_t(0 to 1 - 1); --[TBD] bit size
-    signal o_valid_v0 : sl_array_t(0 to 1 - 1); --[TBD] bit size
-    signal o_valid_v1 : sl_array_t(0 to 1 - 1); --[TBD] bit size
 
     -- A*W =  3x3 * 4x(3x3) = 4x(3x3)
     function f_mul_cal(
@@ -76,8 +74,28 @@ architecture RTL of piping_conv_cal is
         return ret;
     end function;
 
+    --[TODO] Valid/Ready
+    constant COUNT_LEN: positive:=clog2(M);
+    constant COUNT_MAX: std_logic_vector(COUNT_LEN-1 downto 0) := std_logic_vector(to_unsigned(M-1, COUNT_LEN));
+    signal o_valid_v0 : sl_array_t(0 to 1 - 1); --[TBD] bit size
+    signal o_valid_v1 : sl_array_t(0 to 1 - 1); --[TBD] bit size
+    signal i_count: std_logic_vector(COUNT_LEN-1 downto 0);
 begin
     --[TODO] Valid/Ready
+    process (clk, rstn) begin
+        if rstn = '0' then
+            i_count <= (others=>'0');
+        elsif rising_edge(clk) then
+            if i_valid(0) and i_ready_v(0) then
+                if unsigned(i_count) < 28 then
+                    i_count <= f_add_u(i_count, "1")(COUNT_LEN-1 downto 0);
+                else
+                    i_count <= (others=>'0');
+                end if;
+            end if;
+        end if;
+    end process;
+
     process (clk, rstn) begin
         if rstn = '0' then
             o_valid_v0 <= (others=>'0');

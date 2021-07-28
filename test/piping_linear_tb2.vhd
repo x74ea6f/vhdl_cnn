@@ -67,15 +67,22 @@ begin
     end process;
 
     process
+        variable i: integer := 0;
     begin
         print("Hello world!");
 
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        for i in 0 to (N+P-1)/P-1 loop
-            i_valid <= '1';
-            o_ready <= '1';
+        -- for i in 0 to (N+P-1)/P-1 loop
+            -- i_valid <= '1';
+            -- o_ready <= '1';
+        while i < (N+P-1)/P loop
+            i_valid <= rand_slv(1)(0);
+            o_ready <= rand_slv(1)(0);
+            if i_valid = '1' and i_ready = '1' then
+                i := i+1;
+            end if;
 
             for pp in 0 to P-1 loop
                 if (i*P+pp < X_FC2_PRE'length) then

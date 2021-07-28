@@ -15,7 +15,7 @@ entity piping_scale is
         B_DTW : positive := 8; -- Input B Data Width
         SCALE : positive := 2; -- 0 to 255
         SFT_NUM : positive := 1; -- Shift
-        OUT_UNSIGNED: boolean := True
+        OUT_UNSIGNED : boolean := True
     );
     port (
         clk : in std_logic;
@@ -26,15 +26,15 @@ entity piping_scale is
         o_valid : out sl_array_t(0 to (N + P - 1)/P - 1);
         o_ready : in sl_array_t(0 to (N + P - 1)/P - 1);
 
-        a : in slv_array_t(0 to N - 1)(A_DTW - 1 downto 0);
-        b : out slv_array_t(0 to N - 1)(B_DTW - 1 downto 0)
+        a : in slv_array_t(0 to N * P - 1)(A_DTW - 1 downto 0);
+        b : out slv_array_t(0 to N * P - 1)(B_DTW - 1 downto 0)
     );
 end entity;
 
 architecture RTL of piping_scale is
     constant N_P : positive := (N + P - 1)/P;
 
-    signal b_val : slv_array_t(0 to N - 1)(B_DTW - 1 downto 0);
+    signal b_val : slv_array_t(0 to N * P - 1)(B_DTW - 1 downto 0);
     signal i_ready_val : sl_array_t(0 to N_P - 1);
     signal o_valid_val : sl_array_t(0 to N_P - 1);
 
@@ -51,7 +51,7 @@ architecture RTL of piping_scale is
         v_cal := f_mul(v_a, v_scale);
         v_sft := v_cal when SFT_NUM = 0 else
             f_round(v_cal, v_sft'length);
-        if (A_DTW+8-SFT_NUM > B_DTW)then
+        if (A_DTW + 8 - SFT_NUM > B_DTW) then
             v_ret := f_clip(v_sft, B_DTW);
         else
             v_ret := resize(v_sft, B_DTW);
@@ -69,20 +69,18 @@ architecture RTL of piping_scale is
         variable v_ret : unsigned(B_DTW - 1 downto 0);
     begin
         v_a := maximum(to_signed(0, A_DTW), signed(a));
-        v_aa := unsigned(v_a(A_DTW-2 downto 0));
+        v_aa := unsigned(v_a(A_DTW - 2 downto 0));
         v_scale := to_unsigned(SCALE, 8);
         v_cal := f_mul(v_aa, v_scale);
         v_sft := v_cal when SFT_NUM = 0 else
             f_round(v_cal, v_sft'length);
-        if (A_DTW+8-SFT_NUM > B_DTW)then
+        if (A_DTW + 8 - SFT_NUM > B_DTW) then
             v_ret := f_clip(v_sft, B_DTW);
         else
             v_ret := resize(v_sft, B_DTW);
         end if;
         return std_logic_vector(v_ret);
     end function;
-
-
 begin
 
     process (clk, rstn) begin
@@ -90,17 +88,21 @@ begin
             b_val <= (others => (others => '0'));
             o_valid_val <= (others => '0');
         elsif rising_edge(clk) then
-            o_valid_val <= i_valid;
-            if i_valid(0)='1' then
-                for pp in 0 to P - 1 loop
-                    b_val(pp) <= cal_main_unsigned(a(pp)) when OUT_UNSIGNED=True else cal_main(a(pp));
-                end loop;
-            end if;
+            for nn in 0 to N - 1 loop
+                if i_valid(nn) = '1' and i_ready(nn) = '1' then
+                    o_valid_val(nn) <= '1';
+                    for pp in 0 to P - 1 loop
+                        b_val(nn * P + pp) <= cal_main_unsigned(a(nn * P + pp)) when OUT_UNSIGNED = True else
+                        cal_main(a(nn * P + pp));
+                    end loop;
+                elsif o_ready(nn) = '1' then
+                    o_valid_val(nn) <= '0';
+                end if;
+            end loop;
         end if;
     end process;
 
-    i_ready_val <= o_ready;
-
+    i_ready_val <= not o_valid_val;
     o_valid <= o_valid_val;
     b <= b_val;
     i_ready <= i_ready_val;

@@ -210,20 +210,24 @@ begin
 
         i_ready <= i_ready_val;
     else
-        generate -- N=1 Normal
+        generate -- N=1, Simple Adder
             process (clk, rstn) begin
                 if rstn = '0' then
                     c_val <= (others => (others => '0'));
                     o_valid_val <= (others => '0');
                 elsif rising_edge(clk) then
-                    o_valid_val <= i_valid;
-                    for pp in 0 to P - 1 loop
-                        c_val(pp) <= cal_main(a(pp), b(pp));
-                    end loop;
+                    if i_valid="1" and i_ready="1" then
+                        o_valid_val <= "1";
+                        for pp in 0 to P - 1 loop
+                            c_val(pp) <= cal_main(a(pp), b(pp));
+                        end loop;
+                    elsif o_ready="1" then
+                        o_valid_val <= "0";
+                    end if;
                 end if;
             end process;
 
-            i_ready_val <= o_ready;
+            i_ready_val <= not o_valid_val;
 
             o_valid <= o_valid_val;
             c <= c_val;

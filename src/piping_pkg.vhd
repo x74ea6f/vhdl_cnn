@@ -12,6 +12,7 @@ package piping_pkg is
 
     -- sl_array_t演算
     function "and"(l, r : sl_array_t) return sl_array_t;
+    function "or"(l, r : sl_array_t) return sl_array_t;
     function "not"(l : sl_array_t) return sl_array_t;
 
 end package;
@@ -22,6 +23,15 @@ package body piping_pkg is
     begin
         for i in ret'range loop
             ret(i) := l(i) and r(i);
+        end loop;
+        return ret;
+    end function;
+
+    function "or"(l, r : sl_array_t) return sl_array_t is
+        variable ret : sl_array_t(l'range);
+    begin
+        for i in ret'range loop
+            ret(i) := l(i) or r(i);
         end loop;
         return ret;
     end function;

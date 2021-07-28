@@ -36,7 +36,6 @@ architecture RTL of piping_scale is
     constant N_P : positive := (N + P - 1)/P;
 
     signal b_val : slv_array_t(0 to N * P - 1)(B_DTW - 1 downto 0);
-    signal i_ready_val : sl_array_t(0 to N_P - 1);
     signal o_valid_val : sl_array_t(0 to N_P - 1);
 
     -- 計算メイン処理
@@ -90,22 +89,19 @@ begin
             o_valid_val <= (others => '0');
         elsif rising_edge(clk) then
             for nn in 0 to N - 1 loop
-                if i_valid(nn) = '1' and i_ready(nn) = '1' then
-                    o_valid_val(nn) <= '1';
+                if o_valid_val(nn)='0' or o_ready(nn)='1' then
+                    o_valid_val(nn) <= i_valid(nn);
                     for pp in 0 to P - 1 loop
                         b_val(nn * P + pp) <= cal_main_unsigned(a(nn * P + pp)) when OUT_UNSIGNED = True else
                         cal_main(a(nn * P + pp));
                     end loop;
-                elsif o_ready(nn) = '1' then
-                    o_valid_val(nn) <= '0';
                 end if;
             end loop;
         end if;
     end process;
 
-    i_ready_val <= not o_valid_val;
     o_valid <= o_valid_val;
     b <= b_val;
-    i_ready <= i_ready_val;
+    i_ready <= (not o_valid_val) or o_ready;
 
 end architecture;

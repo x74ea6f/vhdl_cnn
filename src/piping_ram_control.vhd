@@ -133,7 +133,7 @@ begin
                 if ram_addr_val = ADR_MAX_SLV then
                     ram_addr_val <= (others => '0');
                 else
-                    ram_addr_val <= ram_addr_val + '1';
+                    ram_addr_val <= f_increment(ram_addr_val);
                 end if;
             end if;
         end if;

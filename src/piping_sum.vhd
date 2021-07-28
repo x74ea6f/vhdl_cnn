@@ -112,7 +112,7 @@ begin
                     i_ready_val(mm) <= '1';
                 elsif i_valid(mm) = '1' then
                     if i_count(mm) < I_COUNT_MAX_SLV then
-                        i_count(mm) <= i_count(mm) + '1';
+                        i_count(mm) <= f_increment(i_count(mm));
                         i_ready_val(mm) <= '1';
                     else
                         i_ready_val(mm) <= '0';
@@ -164,7 +164,7 @@ begin
                 o_valid_val <= '0';
             elsif out_ok = '1' and o_count < O_COUNT_MAX_SLV then
                 if o_valid_val = '1' and o_ready = '1' then
-                    o_count <= o_count + '1';
+                    o_count <= f_increment(o_count);
                 end if;
                 o_valid_val <= '1';
             elsif o_ready = '1' then

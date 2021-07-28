@@ -41,9 +41,9 @@ architecture RTL of piping_conv_cal is
     constant KERNEL_SIZE_2 : positive := KERNEL_SIZE * KERNEL_SIZE;
 
     signal a_buf : slv_array_t(0 to KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
-    signal mul_v : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
-    signal b_v : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
-    signal i_ready_v : sl_array_t(0 to 1 - 1); --[TBD] bit size
+    signal mul_val : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
+    signal b_val : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
+    signal i_ready_val : sl_array_t(0 to 1 - 1); --[TBD] bit size
 
     -- A*W =  3x3 * 4x(3x3) = 4x(3x3)
     function f_mul_cal(
@@ -86,9 +86,9 @@ begin
         if rstn = '0' then
             i_count <= (others=>'0');
         elsif rising_edge(clk) then
-            if i_valid(0) and i_ready_v(0) then
+            if i_valid(0)='1' and i_ready_val(0)='1' then
                 if unsigned(i_count) < 28 then
-                    i_count <= f_add_u(i_count, "1")(COUNT_LEN-1 downto 0);
+                    i_count <= f_increment(i_count);
                 else
                     i_count <= (others=>'0');
                 end if;
@@ -101,22 +101,22 @@ begin
             o_valid_v0 <= (others=>'0');
             o_valid_v1 <= (others=>'0');
         elsif rising_edge(clk) then
-            if i_valid(0) and i_ready_v(0) then
+            if i_valid(0) and i_ready_val(0) then
                 o_valid_v0(0) <= '1';
                 o_valid_v1(0) <= o_valid_v0(0);
             end if;
         end if;
     end process;
 
-    i_ready_v <= o_ready;
-    i_ready <= i_ready_v;
+    i_ready_val <= o_ready;
+    i_ready <= i_ready_val;
     o_valid <= o_valid_v1;
 
     process (clk, rstn) begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if i_valid(0)='1' and i_ready_v(0)='1' then
+            if i_valid(0)='1' and i_ready_val(0)='1' then
                 for i in 0 to (KERNEL_SIZE - 1) loop
                     for j in 0 to (KERNEL_SIZE - 1) loop
                         if i = 0 then
@@ -132,14 +132,14 @@ begin
 
     process (clk, rstn) begin
         if rstn = '0' then
-            mul_v <= (others => (others => '0'));
-            b_v <= (others => (others => '0'));
+            mul_val <= (others => (others => '0'));
+            b_val <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            mul_v <= f_mul_cal(a_buf, KERNEL_WEIGHT);
-            b_v <= f_sum_cal(mul_v);
+            mul_val <= f_mul_cal(a_buf, KERNEL_WEIGHT);
+            b_val <= f_sum_cal(mul_val);
         end if;
     end process;
 
-    b <= b_v;
+    b <= b_val;
 
 end architecture;

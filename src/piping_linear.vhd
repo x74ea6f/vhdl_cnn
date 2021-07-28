@@ -35,6 +35,8 @@ entity piping_linear is
 end entity;
 
 architecture RTL of piping_linear is
+    constant SCALE_DTW : positive := 8;
+
     constant M_P : positive := (M + P - 1)/P;
     constant N_P : positive := (N + P - 1)/P;
     constant MUL_DTW : positive := A_DTW * 2 - 1;
@@ -46,17 +48,17 @@ architecture RTL of piping_linear is
     signal w_ram_control_o_valid : sl_array_t(0 to M - 1);
     signal w_ram_control_o_ready : sl_array_t(0 to M - 1);
     signal w_ram_control_b : slv_array_t(0 to P - 1)(A_DTW - 1 downto 0);
-    signal w_ram_control_c : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
+    signal w_ram_control_c : slv_array_t(0 to P * M - 1)(A_DTW - 1 downto 0);
 
     signal w_ram_re : std_logic;
     signal w_ram_addr : std_logic_vector(W_RAM_ADW - 1 downto 0);
-    signal w_ram_q : std_logic_vector(P*M * A_DTW - 1 downto 0);
-    signal w_ram_rd : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
+    signal w_ram_q : std_logic_vector(P * M * A_DTW - 1 downto 0);
+    signal w_ram_rd : slv_array_t(0 to P * M - 1)(A_DTW - 1 downto 0);
 
     signal mul_o_valid : sl_array_t(0 to M - 1);
     signal mul_o_ready : sl_array_t(0 to M - 1);
-    signal mul_a : slv_array_t(0 to P*M - 1)(A_DTW - 1 downto 0);
-    signal mul_c : slv_array_t(0 to P*M - 1)(MUL_DTW - 1 downto 0);
+    signal mul_a : slv_array_t(0 to P * M - 1)(A_DTW - 1 downto 0);
+    signal mul_c : slv_array_t(0 to P * M - 1)(MUL_DTW - 1 downto 0);
 
     signal sum_o_valid : std_logic;
     signal sum_o_ready : std_logic;
@@ -134,7 +136,7 @@ begin
     -- Mul of W*X
     piping_mul : entity work.piping_mul generic map(
         P => P,
-        N => M*P,
+        N => M * P,
         A_DTW => A_DTW,
         B_DTW => A_DTW,
         C_DTW => MUL_DTW,
@@ -248,6 +250,7 @@ begin
         N => 1,
         A_DTW => SUM_DTW,
         B_DTW => A_DTW,
+        SCALE_DTW => SCALE_DTW,
         SCALE => SCALE,
         SFT_NUM => SCALE_SFT
         )port map(

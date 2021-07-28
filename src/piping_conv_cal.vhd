@@ -37,7 +37,7 @@ end entity;
 architecture RTL of piping_conv_cal is
 
     constant M_P : positive := (M + P - 1)/P;
-    constant KERNEL_CENTER : positive := (KERNEL_SIZE - 1)/2;
+    constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
     constant KERNEL_SIZE_2 : positive := KERNEL_SIZE * KERNEL_SIZE;
 
     signal a_buf : slv_array_t(0 to KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
@@ -75,22 +75,70 @@ architecture RTL of piping_conv_cal is
     end function;
 
     --[TODO] Valid/Ready
-    constant COUNT_LEN: positive:=clog2(M);
-    constant COUNT_MAX: std_logic_vector(COUNT_LEN-1 downto 0) := std_logic_vector(to_unsigned(M-1, COUNT_LEN));
-    signal o_valid_v0 : sl_array_t(0 to 1 - 1); --[TBD] bit size
-    signal o_valid_v1 : sl_array_t(0 to 1 - 1); --[TBD] bit size
-    signal i_count: std_logic_vector(COUNT_LEN-1 downto 0);
+    constant COUNT_LEN : positive := clog2(M);
+    constant COUNT_MAX : std_logic_vector(COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 1, COUNT_LEN));
+    constant COUNT_ZERO : std_logic_vector(COUNT_LEN - 1 downto 0) := (others=>'0');
+    signal o_valid_val : sl_array_t(0 to 1 - 1); --[TBD] bit size
+    signal i_count : std_logic_vector(COUNT_LEN - 1 downto 0);
+    signal o_count : std_logic_vector(COUNT_LEN - 1 downto 0);
+    signal line_start_v0: std_logic;
+    signal line_start_v1: std_logic;
+    signal line_start_v2: std_logic;
+    signal line_end_v0: std_logic;
+    signal line_end_v1: std_logic;
+    signal line_end_v2: std_logic;
+
+    signal i_valid_v0: std_logic;
+    signal i_valid_v1: std_logic;
+    signal i_valid_v2: std_logic;
+    signal cke0: std_logic;
+    signal cke1: std_logic;
+    signal cke2: std_logic;
 begin
     --[TODO] Valid/Ready
     process (clk, rstn) begin
         if rstn = '0' then
-            i_count <= (others=>'0');
+            i_count <= (others => '0');
         elsif rising_edge(clk) then
-            if i_valid(0)='1' and i_ready_val(0)='1' then
-                if unsigned(i_count) < 28 then
+            if i_valid(0) = '1' and i_ready(0) = '1' then
+                if i_count < COUNT_MAX then
                     i_count <= f_increment(i_count);
                 else
-                    i_count <= (others=>'0');
+                    i_count <= (others => '0');
+                end if;
+            end if;
+        end if;
+    end process;
+
+    line_start_v0 <= '1' when i_count=COUNT_ZERO else '0';
+    line_end_v0 <= '1' when i_count=COUNT_MAX else '0';
+    process (clk, rstn) begin
+        if rstn = '0' then
+            line_start_v1 <= '0';
+            line_end_v1 <= '0';
+            line_start_v2 <= '0';
+            line_end_v2 <= '0';
+        elsif rising_edge(clk) then
+            if cke1='1'then
+                line_start_v1 <= line_start_v0;
+                line_end_v1 <= line_end_v0;
+            end if;
+            if cke2='1'then
+                line_start_v2 <= line_start_v1;
+                line_end_v2 <= line_end_v1;
+            end if;
+        end if;
+    end process;
+
+    process (clk, rstn) begin
+        if rstn = '0' then
+            o_count <= (others => '0');
+        elsif rising_edge(clk) then
+            if o_valid(0) = '1' and o_ready(0) = '1' then
+                if o_count < COUNT_MAX then
+                    o_count <= f_increment(o_count);
+                else
+                    o_count <= (others => '0');
                 end if;
             end if;
         end if;
@@ -98,28 +146,37 @@ begin
 
     process (clk, rstn) begin
         if rstn = '0' then
-            o_valid_v0 <= (others=>'0');
-            o_valid_v1 <= (others=>'0');
+            i_valid_v0 <= '0';
+            i_valid_v1 <= '0';
+            i_valid_v2 <= '0';
         elsif rising_edge(clk) then
-            if i_valid(0) and i_ready_val(0) then
-                o_valid_v0(0) <= '1';
-                o_valid_v1(0) <= o_valid_v0(0);
+            if cke0='1' then
+                i_valid_v0 <= i_valid(0);
+            end if;
+            if cke1='1' then
+                i_valid_v1 <= i_valid_v0;
+            end if;
+            if cke2='1' then
+                i_valid_v2 <= (i_valid_v1 and (not line_start_v2)) or line_end_v2 ;
             end if;
         end if;
     end process;
 
-    i_ready_val <= o_ready;
-    i_ready <= i_ready_val;
-    o_valid <= o_valid_v1;
+    cke0 <= (not i_valid_v0) or cke1;
+    cke1 <= (not i_valid_v1) or cke2;
+    cke2 <= (not i_valid_v2) or o_ready(0);
+
+    i_ready(0) <= cke0;
+    o_valid(0) <= i_valid_v2;
 
     process (clk, rstn) begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if i_valid(0)='1' and i_ready_val(0)='1' then
+            if cke0= '1' then
                 for i in 0 to (KERNEL_SIZE - 1) loop
                     for j in 0 to (KERNEL_SIZE - 1) loop
-                        if i = 0 then
+                        if i=0 then
                             a_buf(j) <= a(j);
                         else
                             a_buf(i * KERNEL_SIZE + j) <= a_buf((i - 1) * KERNEL_SIZE + j);
@@ -135,8 +192,12 @@ begin
             mul_val <= (others => (others => '0'));
             b_val <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            mul_val <= f_mul_cal(a_buf, KERNEL_WEIGHT);
-            b_val <= f_sum_cal(mul_val);
+            if cke1 = '1' then
+                mul_val <= f_mul_cal(a_buf, KERNEL_WEIGHT);
+            end if;
+            if cke1 = '1' then
+                b_val <= f_sum_cal(mul_val);
+            end if;
         end if;
     end process;
 

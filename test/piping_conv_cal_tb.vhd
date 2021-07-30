@@ -19,7 +19,7 @@ entity piping_conv_cal_tb is
         IN_CH : positive := 1; -- Input Channnel
         OUT_CH : positive := 4; -- Output Channnel
         KERNEL_SIZE : positive := 3; -- Kernel Size
-        IN_DTW : positive := 8; -- Data Width
+        IN_DTW : positive := 8+4; -- Data Width
         OUT_DTW : positive := 8+4; -- Data Width
         W_DTW : positive := 8 -- Data Width
     );
@@ -115,6 +115,8 @@ architecture SIM of piping_conv_cal_tb is
     signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
+    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
+
 begin
     piping_conv_cal: entity work.piping_conv_cal generic map(
         P => P,
@@ -164,7 +166,8 @@ begin
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
                     for j in 0 to KERNEL_SIZE*IN_CH*P-1 loop
-                        a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
+                        a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
+                        -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
                         -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
                     end loop;
                     dd := dd+1;
@@ -175,18 +178,21 @@ begin
             wait for 1 ns;
         end loop;
         i_valid <= (others=>'0');
-        o_ready <= (others=>'0');
+        o_ready <= (others=>'1');
 
-        wait_clock(clk, 10); -- wait clock rising, 5times
+        wait_clock(clk, 50); -- wait clock rising, 5times
         print("Finish @" + now); -- show Simulation time
         finish(0);
         wait;
     end process;
 
-    process (clk)begin
+    process (clk)
+    begin
         if rising_edge(clk) then
             if o_valid(0)='1' and o_ready(0)='1' then
                 print(to_str(b(0), DEC_S));
+                check(signed(b(0))-signed(b_pre(0)), to_signed(1, OUT_DTW));
+                b_pre <= b;
             end if;
         end if;
     end process;

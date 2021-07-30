@@ -107,6 +107,7 @@ architecture RTL of piping_conv_cal is
 
     signal pix_last_v0_d: std_logic;
     signal pix_last_v0_pls: std_logic;
+    signal pix_last_v0_fall: std_logic;
 
     signal i_valid_v0: std_logic;
     signal i_valid_v1: std_logic;
@@ -153,6 +154,7 @@ begin
     end process;
 
     pix_last_v0_pls <= pix_last_v0 and (not pix_last_v0_d);
+    pix_last_v0_fall <= not pix_last_v0 and pix_last_v0_d;
 
     process (clk, rstn) begin
         if rstn = '0' then
@@ -167,6 +169,7 @@ begin
         elsif rising_edge(clk) then
             if cke1='1'then
                 pix_first_v1 <= pix_first_v0;
+                -- pix_last_v1 <= pix_last_v0_fall;
                 pix_last_v1 <= pix_last_v0_pls;
                 pix_last1_v1 <= pix_last1_v0;
                 pix_last2_v1 <= pix_last2_v0;
@@ -198,7 +201,8 @@ begin
             end if;
             if cke2='1' then
                 --  i_valid_v2 <= (i_valid_v1 and (not (pix_first_v2 and line_first_v2))) or (pix_last_v2 and line_last_v2) ;
-                i_valid_v2 <= i_valid_v1 and (not pix_last_v2);
+                i_valid_v2 <= i_valid_v1 and (not pix_last_v2) and not (pix_first_v2 and line_first_v2);
+                --KARI i_valid_v2 <= i_valid_v1 and (not pix_last_v2);
                 -- i_valid_v2 <= i_valid_v1;
                 -- i_valid_v2 <= (i_valid_v1 and (not pix_first_v2));
                 -- i_valid_v2 <= (i_valid_v1 and (not pix_first_v2)) or pix_last_v2 ;

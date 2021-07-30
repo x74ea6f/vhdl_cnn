@@ -156,10 +156,10 @@ begin
         -- for k in 0 to M*N loop
 
             for i in 0 to IN_CH-1 loop
-                i_valid(i) <= '1';
-                o_ready(i) <= '1';
-                -- i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                -- o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+                -- i_valid(i) <= '1';
+                -- o_ready(i) <= '1';
+                i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+                o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
 
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
@@ -174,8 +174,10 @@ begin
             wait_clock(clk, 1);
             wait for 1 ns;
         end loop;
+        i_valid <= (others=>'0');
+        o_ready <= (others=>'0');
 
-        wait_clock(clk, 5); -- wait clock rising, 5times
+        wait_clock(clk, 10); -- wait clock rising, 5times
         print("Finish @" + now); -- show Simulation time
         finish(0);
         wait;

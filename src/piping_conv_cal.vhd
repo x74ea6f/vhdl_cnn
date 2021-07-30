@@ -43,7 +43,6 @@ architecture RTL of piping_conv_cal is
     signal a_buf : slv_array_t(0 to KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
     signal mul_val : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     signal b_val : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
-    signal i_ready_val : sl_array_t(0 to 1 - 1); --[TBD] bit size
 
     -- A*W =  3x3 * 4x(3x3) = 4x(3x3)
     function f_mul_cal(
@@ -85,7 +84,6 @@ architecture RTL of piping_conv_cal is
     constant LINE_COUNT_ZERO : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := (others=>'0');
     signal i_line_count : std_logic_vector(LINE_COUNT_LEN - 1 downto 0);
 
-    signal o_valid_val : sl_array_t(0 to 1 - 1); --[TBD] bit size
     signal line_first_v0: std_logic;
     signal line_first_v1: std_logic;
     signal line_first_v2: std_logic;
@@ -120,7 +118,7 @@ begin
                     if i_line_count < LINE_COUNT_MAX then
                         i_line_count <= f_increment(i_line_count);
                     else
-                        i_line_count <= (others=>'1');
+                        i_line_count <= (others=>'0');
                     end if;
                 end if;
             end if;
@@ -212,7 +210,7 @@ begin
             if cke1 = '1' then
                 mul_val <= f_mul_cal(a_buf, KERNEL_WEIGHT);
             end if;
-            if cke1 = '1' then
+            if cke2 = '1' then
                 b_val <= f_sum_cal(mul_val);
             end if;
         end if;

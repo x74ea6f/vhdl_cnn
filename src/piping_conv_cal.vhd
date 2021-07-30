@@ -1,3 +1,11 @@
+-- conv
+-- - KERNEL_SIZE=3しかできない。
+--   - PixCounterでマスクしているところの検討不足(現状は最初と最後のピクセルしか考慮してない)
+-- IN_CH=1のみ。[TODO]
+-- P=1のみ。
+--   - しんどいかも。
+-- 
+-- 
 -- 
 library ieee;
 library work;
@@ -73,7 +81,6 @@ architecture RTL of piping_conv_cal is
         return ret;
     end function;
 
-    --[TODO] Valid/Ready
     constant PIX_COUNT_LEN : positive := clog2(M);
     constant PIX_COUNT_MAX : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 1, PIX_COUNT_LEN));
     constant PIX_COUNT_MAX_1 : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 2, PIX_COUNT_LEN));
@@ -105,7 +112,6 @@ architecture RTL of piping_conv_cal is
 
     signal pix_last_v0_d: std_logic;
     signal pix_last_v0_pls: std_logic;
-    signal pix_last_v0_fall: std_logic;
 
     signal i_valid_v0: std_logic;
     signal i_valid_v1: std_logic;
@@ -116,13 +122,12 @@ architecture RTL of piping_conv_cal is
     signal cke2: std_logic;
     signal cke3: std_logic;
 begin
-    --[TODO] Valid/Ready
+    -- Pix/Line Counter
     process (clk, rstn) begin
         if rstn = '0' then
             i_pix_count <= (others => '0');
             i_line_count <= (others => '0');
         elsif rising_edge(clk) then
-            -- if (i_valid(0) = '1' and i_ready(0) = '1') or pix_last_v0='1' then
             if (i_valid(0) = '1' and i_ready(0) = '1') then
                 if i_pix_count < PIX_COUNT_MAX then
                     i_pix_count <= f_increment(i_pix_count);
@@ -152,7 +157,6 @@ begin
     end process;
 
     pix_last_v0_pls <= pix_last_v0 and (not pix_last_v0_d);
-    pix_last_v0_fall <= not pix_last_v0 and pix_last_v0_d;
 
     process (clk, rstn) begin
         if rstn = '0' then
@@ -171,7 +175,6 @@ begin
         elsif rising_edge(clk) then
             if cke1='1'then
                 pix_first_v1 <= pix_first_v0;
-                -- pix_last_v1 <= pix_last_v0_fall;
                 pix_last_v1 <= pix_last_v0_pls;
                 line_first_v1 <= line_first_v0;
                 line_last_v1 <= line_last_v0;
@@ -208,30 +211,18 @@ begin
                 i_valid_v2 <= i_valid_v1;
             end if;
             if cke3='1' then
-                --  i_valid_v2 <= (i_valid_v1 and (not (pix_first_v2 and line_first_v2))) or (pix_last_v2 and line_last_v2) ;
                 i_valid_v3 <= i_valid_v2 and (not pix_last_v3) ;
-                -- i_valid_v3 <= i_valid_v2 and (not pix_last_v3) and not (pix_first_v3 and line_first_v3);
-                --KARI i_valid_v2 <= i_valid_v1 and (not pix_last_v2);
-                -- i_valid_v2 <= i_valid_v1;
-                -- i_valid_v2 <= (i_valid_v1 and (not pix_first_v2));
-                -- i_valid_v2 <= (i_valid_v1 and (not pix_first_v2)) or pix_last_v2 ;
             end if;
         end if;
     end process;
 
     cke0 <= (not i_valid_v0) or cke1;
-    -- cke1 <= ((not i_valid_v1 ) or cke2) and (not ((not pix_first_v2) or pix_last_v2));
-    -- cke1 <= (not ((i_valid_v1 and (not pix_first_v2)) or pix_last_v2)) or cke2;
-    -- cke1 <= (not i_valid_v1) or (cke2 or pix_last_v0);
     cke1 <= (not i_valid_v1) or cke2;
     cke2 <= (not i_valid_v2) or cke3;
-    -- cke2 <= (not i_valid_v2) or (o_ready(0) or pix_last_v0);
     cke3 <= (not i_valid_v3) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
     i_ready(0) <= cke0 and (not pix_last_v0_pls);
-    -- i_ready(0) <= cke0 and (not pix_last_v0);
-    -- i_ready(0) <= cke0;
     o_valid(0) <= i_valid_v3;
 
     process (clk, rstn) begin

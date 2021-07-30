@@ -115,7 +115,7 @@ architecture SIM of piping_conv_cal_tb is
     signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
-    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
+    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'1'));
 
 begin
     piping_conv_cal: entity work.piping_conv_cal generic map(

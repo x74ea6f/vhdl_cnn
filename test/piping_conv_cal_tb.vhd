@@ -144,23 +144,27 @@ begin
     -- make expected data
 
     process
-        variable dd: integer := -M;
+        variable dd: integer := 0;
     begin
         print("Hello world!");
 
         make_reset(rstn, clk, 5); -- reset
         wait_clock(clk, 5); -- wait clock rising, 5times
 
-        for k in 0 to M*N loop
+        dd := 0;
+        while dd < M*N loop
+        -- for k in 0 to M*N loop
 
             for i in 0 to IN_CH-1 loop
-                i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+                i_valid(i) <= '1';
+                o_ready(i) <= '1';
+                -- i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+                -- o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
 
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
                     for j in 0 to KERNEL_SIZE*IN_CH*P-1 loop
-                        a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd) mod (128), IN_DTW));
+                        a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
                         -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
                     end loop;
                     dd := dd+1;

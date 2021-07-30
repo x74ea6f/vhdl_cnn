@@ -89,21 +89,19 @@ architecture RTL of piping_conv_cal is
     signal line_first_v0: std_logic;
     signal line_first_v1: std_logic;
     signal line_first_v2: std_logic;
+    signal line_first_v3: std_logic;
     signal line_last_v0: std_logic;
     signal line_last_v1: std_logic;
     signal line_last_v2: std_logic;
+    signal line_last_v3: std_logic;
     signal pix_first_v0: std_logic;
     signal pix_first_v1: std_logic;
     signal pix_first_v2: std_logic;
+    signal pix_first_v3: std_logic;
     signal pix_last_v0: std_logic;
     signal pix_last_v1: std_logic;
     signal pix_last_v2: std_logic;
-    signal pix_last1_v0: std_logic;
-    signal pix_last1_v1: std_logic;
-    signal pix_last1_v2: std_logic;
-    signal pix_last2_v0: std_logic;
-    signal pix_last2_v1: std_logic;
-    signal pix_last2_v2: std_logic;
+    signal pix_last_v3: std_logic;
 
     signal pix_last_v0_d: std_logic;
     signal pix_last_v0_pls: std_logic;
@@ -112,9 +110,11 @@ architecture RTL of piping_conv_cal is
     signal i_valid_v0: std_logic;
     signal i_valid_v1: std_logic;
     signal i_valid_v2: std_logic;
+    signal i_valid_v3: std_logic;
     signal cke0: std_logic;
     signal cke1: std_logic;
     signal cke2: std_logic;
+    signal cke3: std_logic;
 begin
     --[TODO] Valid/Ready
     process (clk, rstn) begin
@@ -140,8 +140,6 @@ begin
 
     pix_first_v0 <= '1' when i_pix_count=PIX_COUNT_ZERO else '0';
     pix_last_v0 <= '1' when i_pix_count=PIX_COUNT_MAX else '0';
-    pix_last1_v0 <= '1' when i_pix_count=PIX_COUNT_MAX_1 else '0';
-    pix_last2_v0 <= '1' when i_pix_count=PIX_COUNT_MAX_2 else '0';
     line_first_v0 <= '1' when i_line_count=LINE_COUNT_ZERO else '0';
     line_last_v0 <= '1' when i_line_count=LINE_COUNT_MAX else '0';
 
@@ -166,23 +164,29 @@ begin
             line_last_v2 <= '0';
             pix_first_v2 <= '0';
             pix_last_v2 <= '0';
+            line_first_v3 <= '0';
+            line_last_v3 <= '0';
+            pix_first_v3 <= '0';
+            pix_last_v3 <= '0';
         elsif rising_edge(clk) then
             if cke1='1'then
                 pix_first_v1 <= pix_first_v0;
                 -- pix_last_v1 <= pix_last_v0_fall;
                 pix_last_v1 <= pix_last_v0_pls;
-                pix_last1_v1 <= pix_last1_v0;
-                pix_last2_v1 <= pix_last2_v0;
                 line_first_v1 <= line_first_v0;
                 line_last_v1 <= line_last_v0;
             end if;
             if cke2='1'then
                 pix_first_v2 <= pix_first_v1;
                 pix_last_v2 <= pix_last_v1;
-                pix_last1_v2 <= pix_last1_v1;
-                pix_last2_v2 <= pix_last2_v1;
                 line_first_v2 <= line_first_v1;
                 line_last_v2 <= line_last_v1;
+            end if;
+            if cke3='1'then
+                pix_first_v3 <= pix_first_v2;
+                pix_last_v3 <= pix_last_v2;
+                line_first_v3 <= line_first_v2;
+                line_last_v3 <= line_last_v2;
             end if;
         end if;
     end process;
@@ -192,6 +196,7 @@ begin
             i_valid_v0 <= '0';
             i_valid_v1 <= '0';
             i_valid_v2 <= '0';
+            i_valid_v3 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
                 i_valid_v0 <= i_valid(0) or pix_last_v0_pls;
@@ -200,8 +205,12 @@ begin
                 i_valid_v1 <= i_valid_v0;
             end if;
             if cke2='1' then
+                i_valid_v2 <= i_valid_v1;
+            end if;
+            if cke3='1' then
                 --  i_valid_v2 <= (i_valid_v1 and (not (pix_first_v2 and line_first_v2))) or (pix_last_v2 and line_last_v2) ;
-                i_valid_v2 <= i_valid_v1 and (not pix_last_v2) and not (pix_first_v2 and line_first_v2);
+                i_valid_v3 <= i_valid_v2 and (not pix_last_v3) ;
+                -- i_valid_v3 <= i_valid_v2 and (not pix_last_v3) and not (pix_first_v3 and line_first_v3);
                 --KARI i_valid_v2 <= i_valid_v1 and (not pix_last_v2);
                 -- i_valid_v2 <= i_valid_v1;
                 -- i_valid_v2 <= (i_valid_v1 and (not pix_first_v2));
@@ -215,20 +224,21 @@ begin
     -- cke1 <= (not ((i_valid_v1 and (not pix_first_v2)) or pix_last_v2)) or cke2;
     -- cke1 <= (not i_valid_v1) or (cke2 or pix_last_v0);
     cke1 <= (not i_valid_v1) or cke2;
+    cke2 <= (not i_valid_v2) or cke3;
     -- cke2 <= (not i_valid_v2) or (o_ready(0) or pix_last_v0);
-    cke2 <= (not i_valid_v2) or o_ready(0);
+    cke3 <= (not i_valid_v3) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
     i_ready(0) <= cke0 and (not pix_last_v0_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0);
     -- i_ready(0) <= cke0;
-    o_valid(0) <= i_valid_v2;
+    o_valid(0) <= i_valid_v3;
 
     process (clk, rstn) begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if cke0= '1' then
+            if cke0= '1' or cke1='1' then
                 for i in 0 to (KERNEL_SIZE - 1) loop
                     for j in 0 to (KERNEL_SIZE - 1) loop
                         if i=0 then
@@ -247,10 +257,10 @@ begin
             mul_val <= (others => (others => '0'));
             b_val <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if cke1 = '1' then
+            if cke2 = '1' then
                 mul_val <= f_mul_cal(a_buf, KERNEL_WEIGHT);
             end if;
-            if cke2 = '1' then
+            if cke3 = '1' then
                 b_val <= f_sum_cal(mul_val);
             end if;
         end if;

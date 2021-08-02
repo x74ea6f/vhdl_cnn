@@ -21,7 +21,7 @@ workspace.code-workspace
 test/tmp.vcd
 
 ## kari
-model_sim/*
+model_sim*/*
 py/*.csv
 py/*.txt
 py/*.pt

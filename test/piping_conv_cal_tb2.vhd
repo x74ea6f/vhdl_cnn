@@ -116,9 +116,31 @@ architecture SIM of piping_conv_cal_tb2 is
     signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
+    signal buf_o_valid : sl_array_t(0 to 1 - 1);
+    signal buf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal buf_b : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * IN_CH * P - 1)(OUT_DTW - 1 downto 0);
+
     signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(0=>'0', others=>'1'));
 
 begin
+    piping_conv_buf: entity work.piping_conv_buf generic map(
+        P => P,
+        M => M,
+        N => N,
+        CH => IN_CH,
+        KERNEL_SIZE => KERNEL_SIZE,
+        DTW => IN_DTW
+    )port map(
+        clk => clk,
+        rstn => rstn,
+        i_ready => i_ready,
+        i_valid => i_valid,
+        o_ready => buf_o_ready,
+        o_valid => buf_o_valid,
+        a => a,
+        b => buf_b
+    );
+
     piping_conv_cal: entity work.piping_conv_cal generic map(
         P => P,
         M => M,
@@ -133,11 +155,11 @@ begin
     )port map(
         clk => clk,
         rstn => rstn,
-        i_ready => i_ready,
-        i_valid => i_valid,
+        i_ready => buf_o_ready,
+        i_valid => buf_o_valid,
         o_ready => o_ready,
         o_valid => o_valid,
-        a => a,
+        a => buf_b,
         b => b
     );
     process begin

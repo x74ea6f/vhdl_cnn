@@ -129,7 +129,7 @@ begin
             i_valid_v1 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
-                i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls);
+                i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls); --[TODO]
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0_pls);
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0);
             end if;
@@ -139,12 +139,13 @@ begin
         end if;
     end process;
 
-    cke0 <= (not i_valid_v0) or cke1;
+    cke0 <= (not i_valid_v0) or o_ready(0);
+    -- cke0 <= (not i_valid_v0) or cke1;
     cke1 <= (not i_valid_v1) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
     i_ready(0) <= cke0 and (not pix_last_v0_pls);
-    o_valid(0) <= i_valid_v0;
+    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)); --[TODO]
 
     process (clk, rstn) begin
         if rstn = '0' then

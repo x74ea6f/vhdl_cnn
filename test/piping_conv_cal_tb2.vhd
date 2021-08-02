@@ -11,13 +11,13 @@ use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
 
-entity piping_conv_cal_tb is
+entity piping_conv_cal_tb2 is
     generic(
         P : positive := 1; -- Data Parallel
         M : positive := 28; -- Width
         N : positive := 28; -- Height
-        IN_CH : positive := 1; -- Input Channnel
-        OUT_CH : positive := 4; -- Output Channnel
+        IN_CH : positive := 2; -- Input Channnel
+        OUT_CH : positive := 8; -- Output Channnel
         KERNEL_SIZE : positive := 3; -- Kernel Size
         IN_DTW : positive := 8+4; -- Data Width
         OUT_DTW : positive := 8+4; -- Data Width
@@ -25,7 +25,7 @@ entity piping_conv_cal_tb is
     );
 end entity;
 
-architecture SIM of piping_conv_cal_tb is
+architecture SIM of piping_conv_cal_tb2 is
 
     constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
 
@@ -38,51 +38,51 @@ architecture SIM of piping_conv_cal_tb is
         return ret;
     end function;
 
-    constant KERNEL_WEIGHT_INT: integer_vector(0 to KERNEL_SIZE*KERNEL_SIZE*OUT_CH -1) := (
-20,54,16,
--37,28,71,
--64,-75,-14,
-13,2,57,
--9,33,103,
-65,41,9,
--34,-3,45,
-61,56,74,
-124,127,96,
-19,86,90,
-82,65,84,
-13,41,78
-    );
+--     constant KERNEL_WEIGHT_INT: integer_vector(0 to KERNEL_SIZE*KERNEL_SIZE*OUT_CH -1) := (
+-- 20,54,16,
+-- -37,28,71,
+-- -64,-75,-14,
+-- 13,2,57,
+-- -9,33,103,
+-- 65,41,9,
+-- -34,-3,45,
+-- 61,56,74,
+-- 124,127,96,
+-- 19,86,90,
+-- 82,65,84,
+-- 13,41,78
+--     );
 
-    constant X_PRE_INT: integer_vector(0 to M*N*IN_CH -1) := (
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    );
+--     constant X_PRE_INT: integer_vector(0 to M*N*IN_CH -1) := (
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+-- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+--     );
 
     function center_weight return slv_array_t is
         variable ret: slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0);
@@ -91,7 +91,8 @@ architecture SIM of piping_conv_cal_tb is
         for i in 0 to KERNEL_SIZE-1 loop
         for j in 0 to KERNEL_SIZE-1 loop
             if i=KERNEL_CENTER and j=KERNEL_CENTER then
-                ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (oc=>'1', others=>'0');
+                ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (0=>'1', others=>'0');
+                -- ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (oc=>'1', others=>'0');
             else
                 ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (others=>'0');
             end if;
@@ -103,7 +104,7 @@ architecture SIM of piping_conv_cal_tb is
 
     -- constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := int2mem(KERNEL_WEIGHT_INT, W_DTW);
     constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := center_weight;
-    constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(IN_DTW - 1 downto 0) := int2mem(X_PRE_INT, IN_DTW);
+    -- constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(IN_DTW - 1 downto 0) := int2mem(X_PRE_INT, IN_DTW);
 
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
@@ -115,7 +116,7 @@ architecture SIM of piping_conv_cal_tb is
     signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
-    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'1'));
+    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(0=>'0', others=>'1'));
 
 begin
     piping_conv_cal: entity work.piping_conv_cal generic map(
@@ -156,17 +157,17 @@ begin
         dd := 0;
         while dd < M*N loop
         -- for k in 0 to M*N loop
+            i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
 
             for i in 0 to IN_CH-1 loop
                 -- i_valid(i) <= '1';
                 -- o_ready(i) <= '1';
-                i_valid(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-                o_ready(i) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
 
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
-                    for j in 0 to KERNEL_SIZE*IN_CH*P-1 loop
-                        a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
+                    for j in 0 to KERNEL_SIZE*P-1 loop
+                        a(i*(KERNEL_SIZE*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
                         -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
                         -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
                     end loop;
@@ -191,7 +192,7 @@ begin
         if rising_edge(clk) then
             if o_valid(0)='1' and o_ready(0)='1' then
                 print(to_str(b(0), DEC_S));
-                check(signed(b(0))-signed(b_pre(0)), to_signed(1, OUT_DTW));
+                check(signed(b(0))-signed(b_pre(0)), to_signed(2, OUT_DTW));
                 b_pre <= b;
             end if;
         end if;

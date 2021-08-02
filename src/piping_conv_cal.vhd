@@ -5,6 +5,10 @@
 -- P=1のみ。
 --   - しんどいかも。
 -- 
+-- KERNEL_WEIGHT(KERNEL_SIZE=3, IN_CH=1)の並び方(+90°)
+-- | 6 | 3 | 0 |
+-- | 7 | 4 | 1 |
+-- | 8 | 5 | 2 |
 -- 
 -- 
 library ieee;
@@ -48,20 +52,23 @@ architecture RTL of piping_conv_cal is
     constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
     constant KERNEL_SIZE_2 : positive := KERNEL_SIZE * KERNEL_SIZE;
 
-    signal a_buf : slv_array_t(0 to KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
+    signal a_buf : slv_array_t(0 to IN_CH*KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
     signal mul_val : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     signal b_val : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
 
     -- A*W =  3x3 * 4x(3x3) = 4x(3x3)
     function f_mul_cal(
-        a : slv_array_t(0 to KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
+        a : slv_array_t(0 to IN_CH * KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
         w : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(W_DTW - 1 downto 0)
     ) return slv_array_t is
         variable ret : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     begin
-        for oc in 0 to OUT_CH - 1 loop
-            for k in 0 to (KERNEL_SIZE_2 - 1) loop
-                ret(oc * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(k), w(oc * KERNEL_SIZE_2 + k)), OUT_DTW);
+        for oc in 0 to OUT_CH/IN_CH - 1 loop
+            for ic in 0 to IN_CH - 1 loop
+                for k in 0 to (KERNEL_SIZE_2 - 1) loop
+                    ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*KERNEL_SIZE_2+k), w(ic * KERNEL_SIZE_2 + k)), OUT_DTW);
+                    -- ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*IN_CH+k), w(ic * KERNEL_SIZE_2 + k)), OUT_DTW);
+                end loop;
             end loop;
         end loop;
         return ret;
@@ -132,11 +139,11 @@ begin
                 if i_pix_count < PIX_COUNT_MAX then
                     i_pix_count <= f_increment(i_pix_count);
                 else
-                    i_pix_count <= (others => '0');
+                    i_pix_count <= PIX_COUNT_ZERO;
                     if i_line_count < LINE_COUNT_MAX then
                         i_line_count <= f_increment(i_line_count);
                     else
-                        i_line_count <= (others=>'0');
+                        i_line_count <= LINE_COUNT_ZERO;
                     end if;
                 end if;
             end if;
@@ -230,13 +237,16 @@ begin
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
             if cke0= '1' or cke1='1' then
-                for i in 0 to (KERNEL_SIZE - 1) loop
-                    for j in 0 to (KERNEL_SIZE - 1) loop
-                        if i=0 then
-                            a_buf(j) <= a(j);
-                        else
-                            a_buf(i * KERNEL_SIZE + j) <= a_buf((i - 1) * KERNEL_SIZE + j);
-                        end if;
+                for ch in 0 to (IN_CH -1) loop
+                    for i in 0 to (KERNEL_SIZE - 1) loop
+                        for j in 0 to (KERNEL_SIZE - 1) loop
+                            if i=0 then
+                                a_buf(ch * KERNEL_SIZE_2 +j) <= a(ch * KERNEL_SIZE +j);
+                            else
+                                a_buf(ch * KERNEL_SIZE_2 + i * KERNEL_SIZE + j) <= a_buf(ch*KERNEL_SIZE_2 + (i - 1) * KERNEL_SIZE + j);
+                                -- a_buf(i * KERNEL_SIZE + j) <= a_buf((i - 1) * KERNEL_SIZE + j);
+                            end if;
+                        end loop;
                     end loop;
                 end loop;
             end if;

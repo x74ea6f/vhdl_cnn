@@ -192,7 +192,8 @@ begin
     -- i_ready(0) <= cke0;
     -- i_ready(0) <= cke0 and (not pix_last_v1_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0_pls);
-    o_valid(0) <= i_valid_v1;
+    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
+    -- o_valid(0) <= i_valid_v1;
     -- o_valid(0) <= i_valid_v0; --[TODO]
     -- o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)); --[TODO]
 

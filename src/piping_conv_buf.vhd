@@ -68,6 +68,8 @@ architecture RTL of piping_conv_buf is
     signal pix_last_v0: std_logic;
     signal pix_last_v1: std_logic;
     signal pix_last_v2: std_logic;
+    signal pix_first_v0_d: std_logic;
+    signal line_first_v0_d: std_logic;
 
     signal pix_last_v0_d: std_logic;
     signal pix_last_v0_pls: std_logic;
@@ -134,7 +136,11 @@ begin
             pix_last_v2 <= '0';
             line_last_v0_d <= '0';
             line_last_v1_d <= '0';
+            pix_first_v0_d <= '0';
+            line_first_v0_d <= '0';
         elsif rising_edge(clk) then
+            pix_first_v0_d <= pix_first_v0;
+            line_first_v0_d <= line_first_v0;
             line_last_v0_d <= line_last_v0;
             line_last_v1_d <= line_last_v1;
             if cke0='1'then
@@ -212,7 +218,7 @@ begin
     -- i_ready(0) <= cke0 and (not pix_last_v1_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0_pls);
     -- 最初に出さない、最後に余計に出す。
-    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (buf_run_d);
+    o_valid(0) <= (i_valid_v0 and not (pix_first_v0_d and line_first_v0_d)) or (buf_run_d);
     -- o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
     -- o_valid(0) <= i_valid_v1;
     -- o_valid(0) <= i_valid_v0; --[TODO]

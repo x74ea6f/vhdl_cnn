@@ -147,7 +147,8 @@ begin
             i_valid_v2 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
-                i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls) and not (pix_first_v0 and line_first_v0); --[TODO]
+                i_valid_v0 <= (i_valid(0) and (not pix_last_v0_pls) and not (pix_first_v0 and line_first_v0)) or (pix_last_v1 and line_last_v1); --[TODO]
+                -- i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls) and not (pix_first_v0 and line_first_v0); --[TODO]
                 -- i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls); --[TODO]
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0_pls);
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0);

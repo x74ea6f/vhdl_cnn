@@ -83,6 +83,7 @@ architecture RTL of piping_conv_buf is
     signal cke2: std_logic;
 
     signal buf_run: std_logic;
+    signal buf_run_d: std_logic;
 begin
     -- Pix/Line Counter
     process (clk, rstn) begin
@@ -165,6 +166,14 @@ begin
 
     process (clk, rstn) begin
         if rstn = '0' then
+            buf_run_d <= '0';
+        elsif rising_edge(clk) then
+            buf_run_d <= buf_run;
+        end if;
+    end process;
+
+    process (clk, rstn) begin
+        if rstn = '0' then
             i_valid_v0 <= '0';
             i_valid_v1 <= '0';
             i_valid_v2 <= '0';
@@ -188,12 +197,12 @@ begin
         end if;
     end process;
 
-    cke0 <= o_ready(0);
-    cke1 <= o_ready(0);
-    cke2 <= o_ready(0);
-    -- cke0 <= (not i_valid_v0) or o_ready(0);
-    -- cke1 <= (not i_valid_v1) or o_ready(0);
-    -- cke2 <= (not i_valid_v2) or o_ready(0);
+    -- cke0 <= o_ready(0);
+    -- cke1 <= o_ready(0);
+    -- cke2 <= o_ready(0);
+    cke0 <= (not i_valid_v0) or o_ready(0);
+    cke1 <= (not i_valid_v1) or o_ready(0);
+    cke2 <= (not i_valid_v2) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
     i_ready(0) <= cke0 and not buf_run;
@@ -203,7 +212,8 @@ begin
     -- i_ready(0) <= cke0 and (not pix_last_v1_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0_pls);
     -- 最初に出さない、最後に余計に出す。
-    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
+    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (buf_run_d);
+    -- o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
     -- o_valid(0) <= i_valid_v1;
     -- o_valid(0) <= i_valid_v0; --[TODO]
     -- o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)); --[TODO]

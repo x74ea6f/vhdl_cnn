@@ -1,5 +1,6 @@
 -- conv buf
 -- - KERNEL_SIZE=3しかできない。
+-- - P=1しかできない。
 -- 
 -- 
 library ieee;
@@ -17,7 +18,7 @@ entity piping_conv_buf is
         N : positive := 28; -- Height
         CH : positive := 1; -- Input Channnel
         DTW : positive := 8; -- Data Width
-        KERNEL_SIZE: positive := 3
+        KERNEL_SIZE: positive := 3 -- Kernel Size
     );
     port (
         clk : in std_logic;
@@ -35,21 +36,18 @@ end entity;
 
 architecture RTL of piping_conv_buf is
 
-    constant M_P : positive := (M + P - 1)/P;
-    constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
-    constant KERNEL_SIZE_2 : positive := KERNEL_SIZE * KERNEL_SIZE;
+    constant KERNEL_CENTER : positive := KERNEL_SIZE/2; -- Center
+    constant KERNEL_SIZE_SQ : positive := KERNEL_SIZE * KERNEL_SIZE; -- Square
 
-    signal a_buf : slv_array_t(0 to CH*KERNEL_SIZE_2 - 1)(DTW - 1 downto 0);
+    signal a_buf : slv_array_t(0 to CH*KERNEL_SIZE_SQ - 1)(DTW - 1 downto 0);
 
     constant PIX_COUNT_LEN : positive := clog2(M);
     constant PIX_COUNT_MAX : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 1, PIX_COUNT_LEN));
-    constant PIX_COUNT_MAX_1 : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 2, PIX_COUNT_LEN));
-    constant PIX_COUNT_MAX_2 : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 3, PIX_COUNT_LEN));
     constant PIX_COUNT_ZERO : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := (others=>'0');
     signal i_pix_count : std_logic_vector(PIX_COUNT_LEN - 1 downto 0);
 
-    constant LINE_COUNT_LEN : positive := clog2(M);
-    constant LINE_COUNT_MAX : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 1, LINE_COUNT_LEN));
+    constant LINE_COUNT_LEN : positive := clog2(N);
+    constant LINE_COUNT_MAX : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(N - 1, LINE_COUNT_LEN));
     constant LINE_COUNT_ZERO : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := (others=>'0');
     signal i_line_count : std_logic_vector(LINE_COUNT_LEN - 1 downto 0);
 
@@ -198,9 +196,9 @@ begin
                     for i in 0 to (KERNEL_SIZE - 1) loop
                         for j in 0 to (KERNEL_SIZE - 1) loop
                             if i=0 then
-                                a_buf(ch * KERNEL_SIZE_2 +j) <= a(ch * KERNEL_SIZE +j);
+                                a_buf(ch * KERNEL_SIZE_SQ +j) <= a(ch * KERNEL_SIZE +j);
                             else
-                                a_buf(ch * KERNEL_SIZE_2 + i * KERNEL_SIZE + j) <= a_buf(ch*KERNEL_SIZE_2 + (i - 1) * KERNEL_SIZE + j);
+                                a_buf(ch * KERNEL_SIZE_SQ + i * KERNEL_SIZE + j) <= a_buf(ch*KERNEL_SIZE_SQ + (i - 1) * KERNEL_SIZE + j);
                             end if;
                         end loop;
                     end loop;

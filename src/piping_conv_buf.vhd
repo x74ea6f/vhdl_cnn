@@ -58,7 +58,9 @@ architecture RTL of piping_conv_buf is
     signal line_first_v1: std_logic;
     signal line_first_v2: std_logic;
     signal line_last_v0: std_logic;
+    signal line_last_v0_d: std_logic;
     signal line_last_v1: std_logic;
+    signal line_last_v1_d: std_logic;
     signal line_last_v2: std_logic;
     signal pix_first_v0: std_logic;
     signal pix_first_v1: std_logic;
@@ -116,7 +118,8 @@ begin
         end if;
     end process;
 
-    pix_last_v0_pls <= pix_last_v0 and (not pix_last_v0_d);
+    pix_last_v0_pls <= (not pix_last_v0) and pix_last_v0_d; -- fall
+    -- pix_last_v0_pls <= pix_last_v0 and (not pix_last_v0_d); -- rise
 
     process (clk, rstn) begin
         if rstn = '0' then
@@ -129,7 +132,9 @@ begin
             pix_first_v2 <= '0';
             pix_last_v2 <= '0';
         elsif rising_edge(clk) then
-            if cke1='1'then
+            line_last_v0_d <= line_last_v0;
+            line_last_v1_d <= line_last_v1;
+            if cke0='1'then
                 pix_first_v1 <= pix_first_v0;
                 -- pix_last_v1 <= pix_last_v0;
                 pix_last_v1_pls <= pix_last_v0_pls;
@@ -137,7 +142,7 @@ begin
                 line_first_v1 <= line_first_v0;
                 line_last_v1 <= line_last_v0;
             end if;
-            if cke2='1'then
+            if cke1='1'then
                 pix_last_v2_pls <= pix_last_v1_pls;
                 pix_first_v2 <= pix_first_v1;
                 pix_last_v2 <= pix_last_v1;
@@ -153,7 +158,8 @@ begin
     -- i_valid_v00 <= (i_valid(0) and (not pix_last_v0_pls)) or (pix_last_v0_pls and line_last_v0) or (pix_last_v1_pls and line_last_v1); --[TODO]
     -- i_valid_v00 <= (i_valid(0) and (not pix_last_v0_pls) and not (pix_first_v0 and line_first_v0)) or (pix_last_v0_pls and line_last_v0) or (pix_last_v1_pls and line_last_v1); --[TODO]
 
-    buf_run <= pix_last_v1_pls and line_last_v1;
+    buf_run <= pix_last_v0_pls and line_last_v0_d;
+    -- buf_run <= pix_last_v1_pls and line_last_v1;
 
     process (clk, rstn) begin
         if rstn = '0' then
@@ -188,10 +194,13 @@ begin
     -- cke2 <= (not i_valid_v2) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
-    i_ready(0) <= cke0 and not (pix_last_v1_pls and line_last_v1);
+    i_ready(0) <= cke0 and not buf_run;
+    -- i_ready(0) <= cke0 and not (pix_last_v0_pls and line_last_v0_d);
+    -- i_ready(0) <= cke0 and not (pix_last_v1_pls and line_last_v1);
     -- i_ready(0) <= cke0;
     -- i_ready(0) <= cke0 and (not pix_last_v1_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0_pls);
+    -- 開始に止めて、最後に余計に出す。
     o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
     -- o_valid(0) <= i_valid_v1;
     -- o_valid(0) <= i_valid_v0; --[TODO]
@@ -201,7 +210,7 @@ begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if cke0='1' and (i_valid_v00='1' or buf_run='1') then
+            if cke0='1' and ((i_valid_v00='1' and i_ready(0)='1') or buf_run='1') then
             -- if cke0='1' and ((i_valid(0)='1' and  pix_last_v0_pls='0') or (pix_last_v0_pls='1' and line_last_v0='1')or (pix_last_v1_pls='1' and line_last_v1='1'))then
             -- if cke0='1' and ((i_valid(0)='1' and  pix_last_v0_pls='0') or (pix_last_v1_pls='1' and line_last_v1='1'))then
                 for ch in 0 to (CH -1) loop

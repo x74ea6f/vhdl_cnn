@@ -143,15 +143,16 @@ begin
             line_first_v0_d <= line_first_v0;
             line_last_v0_d <= line_last_v0;
             line_last_v1_d <= line_last_v1;
-            if cke0='1'then
+            if (i_valid(0) = '1' and i_ready(0) = '1') then
+            -- if cke0='1'then
                 pix_first_v1 <= pix_first_v0;
                 -- pix_last_v1 <= pix_last_v0;
                 pix_last_v1_pls <= pix_last_v0_pls;
                 pix_last_v1 <= pix_last_v0;
                 line_first_v1 <= line_first_v0;
                 line_last_v1 <= line_last_v0;
-            end if;
-            if cke1='1'then
+            -- end if;
+            -- if cke1='1'then
                 pix_last_v2_pls <= pix_last_v1_pls;
                 pix_first_v2 <= pix_first_v1;
                 pix_last_v2 <= pix_last_v1;
@@ -247,20 +248,20 @@ begin
     end process;
 
 
-    -- process (all) begin
-    --     for i in 0 to KERNEL_SIZE-1 loop
-    --         for j in 0 to KERNEL_SIZE-1 loop
-    --             if ((j mod KERNEL_SIZE)=0 and line_first_v2='1') or 
-    --               ((j mod KERNEL_SIZE)=2 and line_last_v2='1') or 
-    --               ((i mod KERNEL_SIZE)=2 and pix_first_v2='1') or 
-    --               ((i mod KERNEL_SIZE)=0 and pix_last_v2='1') then
-    --                 b(i*KERNEL_SIZE+j) <= (others=>'0');
-    --             else
-    --                 b(i*KERNEL_SIZE+j) <= a_buf(i*KERNEL_SIZE+j);
-    --             end if;
-    --         end loop;
-    --     end loop;
-    -- end process;
-    b <= a_buf;
+    process (all) begin
+        for i in 0 to KERNEL_SIZE-1 loop
+            for j in 0 to KERNEL_SIZE-1 loop
+                if ((j mod KERNEL_SIZE)=0 and line_first_v2='1') or 
+                  ((j mod KERNEL_SIZE)=2 and line_last_v2='1') or 
+                  ((i mod KERNEL_SIZE)=2 and pix_first_v2='1') or 
+                  ((i mod KERNEL_SIZE)=0 and pix_last_v2='1') then
+                    b(i*KERNEL_SIZE+j) <= (others=>'0');
+                else
+                    b(i*KERNEL_SIZE+j) <= a_buf(i*KERNEL_SIZE+j);
+                end if;
+            end loop;
+        end loop;
+    end process;
+    -- b <= a_buf;
 
 end architecture;

@@ -90,6 +90,7 @@ architecture SIM of piping_conv_cal_tb1 is
         for oc in 0 to OUT_CH-1 loop
         for i in 0 to KERNEL_SIZE-1 loop
         for j in 0 to KERNEL_SIZE-1 loop
+            -- if i=2 and j=2 then
             -- if i=0 and j=0 then
             if i=KERNEL_CENTER and j=KERNEL_CENTER then
                 ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (0=>'1', others=>'0');

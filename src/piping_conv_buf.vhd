@@ -56,20 +56,26 @@ architecture RTL of piping_conv_buf is
 
     signal line_first_v0: std_logic;
     signal line_first_v1: std_logic;
+    signal line_first_v2: std_logic;
     signal line_last_v0: std_logic;
     signal line_last_v1: std_logic;
+    signal line_last_v2: std_logic;
     signal pix_first_v0: std_logic;
     signal pix_first_v1: std_logic;
+    signal pix_first_v2: std_logic;
     signal pix_last_v0: std_logic;
     signal pix_last_v1: std_logic;
+    signal pix_last_v2: std_logic;
 
     signal pix_last_v0_d: std_logic;
     signal pix_last_v0_pls: std_logic;
 
     signal i_valid_v0: std_logic;
     signal i_valid_v1: std_logic;
+    signal i_valid_v2: std_logic;
     signal cke0: std_logic;
     signal cke1: std_logic;
+    signal cke2: std_logic;
 begin
     -- Pix/Line Counter
     process (clk, rstn) begin
@@ -113,12 +119,23 @@ begin
             line_last_v1 <= '0';
             pix_first_v1 <= '0';
             pix_last_v1 <= '0';
+            line_first_v2 <= '0';
+            line_last_v2 <= '0';
+            pix_first_v2 <= '0';
+            pix_last_v2 <= '0';
         elsif rising_edge(clk) then
             if cke1='1'then
                 pix_first_v1 <= pix_first_v0;
+                -- pix_last_v1 <= pix_last_v0;
                 pix_last_v1 <= pix_last_v0_pls;
                 line_first_v1 <= line_first_v0;
                 line_last_v1 <= line_last_v0;
+            end if;
+            if cke2='1'then
+                pix_first_v2 <= pix_first_v1;
+                pix_last_v2 <= pix_last_v1;
+                line_first_v2 <= line_first_v1;
+                line_last_v2 <= line_last_v1;
             end if;
         end if;
     end process;
@@ -127,14 +144,19 @@ begin
         if rstn = '0' then
             i_valid_v0 <= '0';
             i_valid_v1 <= '0';
+            i_valid_v2 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
-                i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls); --[TODO]
+                i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls) and not (pix_first_v0 and line_first_v0); --[TODO]
+                -- i_valid_v0 <= i_valid(0) and (not pix_last_v0_pls); --[TODO]
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0_pls);
                 -- i_valid_v0 <= (i_valid(0) or pix_last_v0_pls) and (not pix_last_v0);
             end if;
             if cke1='1' then
                 i_valid_v1 <= i_valid_v0 and (not pix_last_v1) ;
+            end if;
+            if cke2='1' then
+                i_valid_v2 <= i_valid_v1;
             end if;
         end if;
     end process;
@@ -142,16 +164,18 @@ begin
     cke0 <= (not i_valid_v0) or o_ready(0);
     -- cke0 <= (not i_valid_v0) or cke1;
     cke1 <= (not i_valid_v1) or o_ready(0);
+    cke2 <= (not i_valid_v2) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
     i_ready(0) <= cke0 and (not pix_last_v0_pls);
-    o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)); --[TODO]
+    o_valid(0) <= i_valid_v0; --[TODO]
+    -- o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)); --[TODO]
 
     process (clk, rstn) begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if cke0='1' and (i_valid(0)='1' and  pix_last_v0_pls='0') then
+            if cke0='1' and ((i_valid(0)='1' and  pix_last_v0_pls='0') or (pix_last_v1='1' and line_last_v1='1'))then
                 for ch in 0 to (CH -1) loop
                     for i in 0 to (KERNEL_SIZE - 1) loop
                         for j in 0 to (KERNEL_SIZE - 1) loop
@@ -172,6 +196,20 @@ begin
     end process;
 
 
-    b <= a_buf;
+    process (all) begin
+        for i in 0 to KERNEL_SIZE-1 loop
+            for j in 0 to KERNEL_SIZE-1 loop
+                if ((j mod KERNEL_SIZE)=0 and line_first_v2='1') or 
+                  ((j mod KERNEL_SIZE)=2 and line_last_v2='1') or 
+                  ((i mod KERNEL_SIZE)=2 and pix_first_v2='1') or 
+                  ((i mod KERNEL_SIZE)=0 and pix_last_v2='1') then
+                    b(i*KERNEL_SIZE+j) <= (others=>'0');
+                else
+                    b(i*KERNEL_SIZE+j) <= a_buf(i*KERNEL_SIZE+j);
+                end if;
+            end loop;
+        end loop;
+    end process;
+    -- b <= a_buf;
 
 end architecture;

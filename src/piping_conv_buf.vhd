@@ -131,6 +131,8 @@ begin
             line_last_v2 <= '0';
             pix_first_v2 <= '0';
             pix_last_v2 <= '0';
+            line_last_v0_d <= '0';
+            line_last_v1_d <= '0';
         elsif rising_edge(clk) then
             line_last_v0_d <= line_last_v0;
             line_last_v1_d <= line_last_v1;
@@ -200,7 +202,7 @@ begin
     -- i_ready(0) <= cke0;
     -- i_ready(0) <= cke0 and (not pix_last_v1_pls);
     -- i_ready(0) <= cke0 and (not pix_last_v0_pls);
-    -- 開始に止めて、最後に余計に出す。
+    -- 最初に出さない、最後に余計に出す。
     o_valid(0) <= (i_valid_v0 and not (pix_first_v1 and line_first_v1)) or (pix_last_v2 and line_last_v2);
     -- o_valid(0) <= i_valid_v1;
     -- o_valid(0) <= i_valid_v0; --[TODO]

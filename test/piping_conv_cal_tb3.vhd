@@ -11,23 +11,93 @@ use work.sim_lib.all;
 use work.numeric_lib.all;
 use work.piping_pkg.all;
 
-entity piping_conv_cal_tb1 is
+entity piping_conv_cal_tb3 is
     generic(
         P : positive := 1; -- Data Parallel
         M : positive := 28; -- Width
         N : positive := 28; -- Height
         IN_CH : positive := 1; -- Input Channnel
-        OUT_CH : positive := 8; -- Output Channnel
+        OUT_CH : positive := 4; -- Output Channnel
         KERNEL_SIZE : positive := 3; -- Kernel Size
-        IN_DTW : positive := 8+4; -- Data Width
-        OUT_DTW : positive := 8+4; -- Data Width
+        IN_DTW : positive := 8; -- Data Width
+        OUT_DTW : positive := 12; -- Data Width
         W_DTW : positive := 8 -- Data Width
     );
 end entity;
 
-architecture SIM of piping_conv_cal_tb1 is
+architecture SIM of piping_conv_cal_tb3 is
 
     constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
+
+    function int2mem(iv: integer_vector; DTW: positive) return slv_array_t is
+        variable ret: slv_array_t(0 to iv'length-1)(DTW-1 downto 0);
+    begin
+        for i in 0 to iv'length-1 loop
+            ret(i) := std_logic_vector(to_signed(iv(i), DTW));
+        end loop;
+        return ret;
+    end function;
+
+    -- -- RTLで使いやすいように、Kernelの回転
+    -- function kernel_rotate(iv: integer_vector) return integer_vector is
+    --     variable ret: integer_vector(iv'range);
+    -- begin
+    --     for ch in 0 to OUT_CH-1 loop
+    --         for i in 0 to KERNEL_SIZE-1 loop
+    --             for j in 0 to KERNEL_SIZE-1 loop
+    --                 ret(ch*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE + j) :=
+    --                     iv(ch*KERNEL_SIZE*KERNEL_SIZE + (KERNEL_SIZE-j-1)*KERNEL_SIZE + i);
+    --             end loop;
+    --         end loop;
+    --     end loop;
+    --     return ret;
+    -- end function;
+
+    constant KERNEL_WEIGHT_INT: integer_vector(0 to KERNEL_SIZE*KERNEL_SIZE*OUT_CH -1) := (
+20,54,16,
+-37,28,71,
+-64,-75,-14,
+13,2,57,
+-9,33,103,
+65,41,9,
+-34,-3,45,
+61,56,74,
+124,127,96,
+19,86,90,
+82,65,84,
+13,41,78
+    );
+
+    constant X_PRE_INT: integer_vector(0 to M*N*IN_CH -1) := (
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    );
 
     function center_weight return slv_array_t is
         variable ret: slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0);
@@ -49,7 +119,10 @@ architecture SIM of piping_conv_cal_tb1 is
         return ret;
     end function;
 
-    constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := center_weight;
+    constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) :=
+        int2mem(KERNEL_WEIGHT_INT, W_DTW);
+    -- constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := center_weight;
+    constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(IN_DTW - 1 downto 0) := int2mem(X_PRE_INT, IN_DTW);
 
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
@@ -64,13 +137,13 @@ architecture SIM of piping_conv_cal_tb1 is
 
     signal lbuf_o_valid : sl_array_t(0 to 1 - 1);
     signal lbuf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
-    signal lbuf_b : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(OUT_DTW - 1 downto 0);
+    signal lbuf_b : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0);
 
     signal buf_o_valid : sl_array_t(0 to 1 - 1);
     signal buf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
-    signal buf_b : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * IN_CH * P - 1)(OUT_DTW - 1 downto 0);
+    signal buf_b : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0);
 
-    signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'1'));
+    signal tmp: integer_vector(0 to OUT_CH*M*N-1);
 
 begin
     piping_conv_line_buf: entity work.piping_conv_line_buf generic map(
@@ -138,6 +211,7 @@ begin
 
     process
         variable dd: integer := 0;
+        variable t: integer:=0;
     begin
         print("Hello world!");
 
@@ -159,13 +233,8 @@ begin
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
                     for j in 0 to P-1 loop
-                        a(i*P+j) <= std_logic_vector(to_signed(j*M+dd, IN_DTW));
+                        a(i*P+j) <= X_PRE(dd);
                     end loop;
-                    -- for j in 0 to KERNEL_SIZE*P-1 loop
-                    --     a(i*(KERNEL_SIZE*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
-                    --     -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
-                    --     -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
-                    -- end loop;
                     dd := dd+1;
                 end if;
             end loop;
@@ -175,27 +244,46 @@ begin
         end loop;
 
         i_valid <= (others=>'0');
-        -- o_ready <= (others=>'1');
-
-        for i in 0 to M*8 loop
-            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
-            wait_clock(clk, 1);
-        end loop;
         o_ready <= (others=>'1');
 
+        -- dd := 0;
+        -- while dd < M loop
+        --     o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+        --     if o_valid(0)='1' and o_ready(0)='1' then
+        --         dd := dd + 1;
+        --     end if;
+        --     wait_clock(clk, 1);
+        -- end loop;
+
         wait_clock(clk, 50); -- wait clock rising, 5times
+
+        for i in 0 to M*N-1 loop
+            t := tmp(i*OUT_CH+3);
+            t := (t * 8)/100; -- 0.008
+            t := t when t>0 else 0;
+            print(to_str(t) & ",", False);
+            if (i mod M) = M-1 then
+                print("", True);
+            end if;
+        end loop;
+
         print("Finish @" + now); -- show Simulation time
         finish(0);
         wait;
     end process;
 
     process (clk)
+    variable oo: integer:= 0;
     begin
         if rising_edge(clk) then
             if o_valid(0)='1' and o_ready(0)='1' then
-                print(to_str(b(0), DEC_S));
-                check(signed(b(0))-signed(b_pre(0)), to_signed(1, OUT_DTW));
-                b_pre <= b;
+                for oc in 0 to OUT_CH -1 loop
+                    print(to_str(b(oc), DEC_S) & ",", False);
+                    -- check(signed(b(0))-signed(b_pre(0)), to_signed(1, OUT_DTW));
+                    tmp(oo) <= to_integer(signed(b(oc)));
+                    oo := oo + 1;
+                end loop;
+                print("", True);
             end if;
         end if;
     end process;

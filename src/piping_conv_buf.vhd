@@ -194,12 +194,12 @@ begin
         elsif rising_edge(clk) then
             if cke0='1' and ((i_valid(0)='1' and i_ready(0)='1') or buf_run='1') then
                 for ch in 0 to (CH -1) loop
-                    for i in 0 to (KERNEL_SIZE - 1) loop
-                        for j in 0 to (KERNEL_SIZE - 1) loop
-                            if i=0 then
-                                a_buf(ch * KERNEL_SIZE_SQ +j) <= a(ch * KERNEL_SIZE +j);
+                    for j in 0 to (KERNEL_SIZE - 1) loop
+                        for i in 0 to (KERNEL_SIZE - 1) loop
+                            if i=KERNEL_SIZE-1 then
+                                a_buf(ch * KERNEL_SIZE_SQ + j*KERNEL_SIZE + i) <= a(ch * KERNEL_SIZE + j);
                             else
-                                a_buf(ch * KERNEL_SIZE_SQ + i * KERNEL_SIZE + j) <= a_buf(ch*KERNEL_SIZE_SQ + (i - 1) * KERNEL_SIZE + j);
+                                a_buf(ch * KERNEL_SIZE_SQ + j*KERNEL_SIZE + i) <= a_buf(ch*KERNEL_SIZE_SQ + j * KERNEL_SIZE + i + 1);
                             end if;
                         end loop;
                     end loop;
@@ -208,6 +208,25 @@ begin
         end if;
     end process;
 
+    -- process (clk, rstn) begin
+    --     if rstn = '0' then
+    --         a_buf <= (others => (others => '0'));
+    --     elsif rising_edge(clk) then
+    --         if cke0='1' and ((i_valid(0)='1' and i_ready(0)='1') or buf_run='1') then
+    --             for ch in 0 to (CH -1) loop
+    --                 for i in 0 to (KERNEL_SIZE - 1) loop
+    --                     for j in 0 to (KERNEL_SIZE - 1) loop
+    --                         if i=0 then
+    --                             a_buf(ch * KERNEL_SIZE_SQ +j) <= a(ch * KERNEL_SIZE +j);
+    --                         else
+    --                             a_buf(ch * KERNEL_SIZE_SQ + i * KERNEL_SIZE + j) <= a_buf(ch*KERNEL_SIZE_SQ + (i - 1) * KERNEL_SIZE + j);
+    --                         end if;
+    --                     end loop;
+    --                 end loop;
+    --             end loop;
+    --         end if;
+    --     end if;
+    -- end process;
 
     process (all) begin
         for ch in 0 to CH-1 loop

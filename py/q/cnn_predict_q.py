@@ -83,6 +83,7 @@ save_bias(net.fc2.bias().data, net.fc2.weight().q_scale(),  "fc2_b.q_scaled.csv"
 for i in range(4):
     save_csv(net.conv1.weight().data[i][0], f"conv1_w{i}.q.csv")
 save_bias(net.conv1.bias().data, net.conv1.weight().q_scale(), "conv1_b.q.csv")
+print("TMP=", net.conv1.bias())
 
 ## print("SIZE=", net.conv1.weight().size())
 ## print("SIZE=", net.conv1.bias().size())

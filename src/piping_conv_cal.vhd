@@ -52,7 +52,6 @@ architecture RTL of piping_conv_cal is
     constant KERNEL_CENTER : positive := KERNEL_SIZE/2;
     constant KERNEL_SIZE_2 : positive := KERNEL_SIZE * KERNEL_SIZE;
 
-    signal a_buf : slv_array_t(0 to IN_CH*KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
     signal mul_val : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     signal b_val : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
 
@@ -66,7 +65,7 @@ architecture RTL of piping_conv_cal is
         for oc in 0 to OUT_CH/IN_CH - 1 loop
             for ic in 0 to IN_CH - 1 loop
                 for k in 0 to (KERNEL_SIZE_2 - 1) loop
-                    ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*KERNEL_SIZE_2+k), w(ic * KERNEL_SIZE_2 + k)), OUT_DTW);
+                    ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*KERNEL_SIZE_2+k), w(oc * KERNEL_SIZE_2 + k)), OUT_DTW);
                     -- ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*IN_CH+k), w(ic * KERNEL_SIZE_2 + k)), OUT_DTW);
                 end loop;
             end loop;

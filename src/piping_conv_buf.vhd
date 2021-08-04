@@ -117,7 +117,8 @@ begin
             pix_first_v2 <= '0';
             pix_last_v2 <= '0';
         elsif rising_edge(clk) then
-            if (i_valid(0) = '1' and i_ready(0) = '1') then
+            if (i_valid(0) = '1' and i_ready(0) = '1') or buf_run='1' then
+            -- if (i_valid(0) = '1' and i_ready(0) = '1') then
                 pix_first_v1 <= pix_first_v0;
                 pix_last_v1 <= pix_last_v0;
                 line_first_v1 <= line_first_v0;

@@ -90,6 +90,8 @@ architecture SIM of piping_conv_cal_tb2 is
         for oc in 0 to OUT_CH-1 loop
         for i in 0 to KERNEL_SIZE-1 loop
         for j in 0 to KERNEL_SIZE-1 loop
+            -- if i=2 and j=2 then
+            -- if i=0 and j=0 then
             if i=KERNEL_CENTER and j=KERNEL_CENTER then
                 ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (0=>'1', others=>'0');
                 -- ret(oc*KERNEL_SIZE*KERNEL_SIZE + i*KERNEL_SIZE+j) := (oc=>'1', others=>'0');
@@ -112,9 +114,14 @@ architecture SIM of piping_conv_cal_tb2 is
     signal i_ready : sl_array_t(0 to 1 - 1);
     signal o_valid : sl_array_t(0 to 1 - 1);
     signal o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
-    signal a : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
+    signal a : slv_array_t(0 to IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
+    -- signal a : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
     signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
+
+    signal lbuf_o_valid : sl_array_t(0 to 1 - 1);
+    signal lbuf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal lbuf_b : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(OUT_DTW - 1 downto 0);
 
     signal buf_o_valid : sl_array_t(0 to 1 - 1);
     signal buf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
@@ -123,7 +130,7 @@ architecture SIM of piping_conv_cal_tb2 is
     signal b_pre : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(0=>'0', others=>'1'));
 
 begin
-    piping_conv_buf: entity work.piping_conv_buf generic map(
+    piping_conv_line_buf: entity work.piping_conv_line_buf generic map(
         P => P,
         M => M,
         N => N,
@@ -135,9 +142,27 @@ begin
         rstn => rstn,
         i_ready => i_ready,
         i_valid => i_valid,
+        o_ready => lbuf_o_ready,
+        o_valid => lbuf_o_valid,
+        a => a,
+        b => lbuf_b
+    );
+
+    piping_conv_buf: entity work.piping_conv_buf generic map(
+        P => P,
+        M => M,
+        N => N,
+        CH => IN_CH,
+        KERNEL_SIZE => KERNEL_SIZE,
+        DTW => IN_DTW
+    )port map(
+        clk => clk,
+        rstn => rstn,
+        i_ready => lbuf_o_ready,
+        i_valid => lbuf_o_valid,
         o_ready => buf_o_ready,
         o_valid => buf_o_valid,
-        a => a,
+        a => lbuf_b,
         b => buf_b
     );
 
@@ -179,20 +204,25 @@ begin
         dd := 0;
         while dd < M*N*IN_CH loop
         -- for k in 0 to M*N loop
-            i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+            i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            -- i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+            -- o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
+            -- i_valid(0) <= '1';
+            -- o_ready(0) <= '1';
 
             for i in 0 to IN_CH-1 loop
-                -- i_valid(i) <= '1';
-                -- o_ready(i) <= '1';
 
                 wait for 1 ns;
                 if i_valid(0)='1' and i_ready(0)='1' then
-                    for j in 0 to KERNEL_SIZE*P-1 loop
-                        a(i*(KERNEL_SIZE*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
-                        -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
-                        -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
+                    for j in 0 to P-1 loop
+                        a(i*P+j) <= std_logic_vector(to_signed(j*M+dd, IN_DTW));
                     end loop;
+                    -- for j in 0 to KERNEL_SIZE*P-1 loop
+                    --     a(i*(KERNEL_SIZE*P)+j) <= std_logic_vector(to_signed(j*M+dd-M, IN_DTW));
+                    --     -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= std_logic_vector(to_unsigned((j*M+dd-M) mod (128), IN_DTW));
+                    --     -- a(i*(KERNEL_SIZE*IN_CH*P)+j) <= (0=>rand_slv(1)(0), others=>'0');
+                    -- end loop;
                     dd := dd+1;
                 end if;
             end loop;
@@ -200,8 +230,18 @@ begin
             wait_clock(clk, 1);
             wait for 1 ns;
         end loop;
+
         i_valid <= (others=>'0');
-        o_ready <= (others=>'1');
+        -- o_ready <= (others=>'1');
+
+        dd := 0;
+        while dd < M loop
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            if o_valid(0)='1' and o_ready(0)='1' then
+                dd := dd + 1;
+            end if;
+            wait_clock(clk, 1);
+        end loop;
 
         wait_clock(clk, 50); -- wait clock rising, 5times
         print("Finish @" + now); -- show Simulation time

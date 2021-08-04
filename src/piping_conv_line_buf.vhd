@@ -167,12 +167,12 @@ begin
             b <= (others=>(others=>'0'));
         elsif rising_edge(clk) then
             if cke0='1' then
-                for k in 0 to KERNEL_SIZE-1 loop
-                    for i in 0 to CH*P-1 loop
+                for i in 0 to CH*P-1 loop
+                    for k in 0 to KERNEL_SIZE-1 loop
                         if k=KERNEL_SIZE-1 then
-                            b(k*CH*P + i) <= a(i);
+                            b(i*KERNEL_SIZE + k) <= a(i);
                         else
-                            b(k*CH*P + i) <= ram_q(to_integer((unsigned(i_line_count)+k) mod (KERNEL_SIZE-1)))(DTW*(i+1)-1 downto DTW*i);
+                            b(i*KERNEL_SIZE + k) <= ram_q(to_integer((unsigned(i_line_count)+k) mod (KERNEL_SIZE-1)))(DTW*(i+1)-1 downto DTW*i);
                         end if;
                     end loop;
                 end loop;

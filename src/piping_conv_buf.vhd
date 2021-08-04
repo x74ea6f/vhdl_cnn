@@ -210,16 +210,18 @@ begin
 
 
     process (all) begin
-        for i in 0 to KERNEL_SIZE-1 loop
-            for j in 0 to KERNEL_SIZE-1 loop
-                if ((j mod KERNEL_SIZE)=0 and line_first_v2='1') or 
-                  ((j mod KERNEL_SIZE)=2 and line_last_v2='1') or 
-                  ((i mod KERNEL_SIZE)=2 and pix_first_v2='1') or 
-                  ((i mod KERNEL_SIZE)=0 and pix_last_v2='1') then
-                    b(i*KERNEL_SIZE+j) <= (others=>'0');
-                else
-                    b(i*KERNEL_SIZE+j) <= a_buf(i*KERNEL_SIZE+j);
-                end if;
+        for ch in 0 to CH-1 loop
+            for i in 0 to KERNEL_SIZE-1 loop
+                for j in 0 to KERNEL_SIZE-1 loop
+                    if ((j mod KERNEL_SIZE)=0 and line_first_v2='1') or 
+                    ((j mod KERNEL_SIZE)=2 and line_last_v2='1') or 
+                    ((i mod KERNEL_SIZE)=2 and pix_first_v2='1') or 
+                    ((i mod KERNEL_SIZE)=0 and pix_last_v2='1') then
+                        b(ch*KERNEL_SIZE_SQ + i*KERNEL_SIZE+j) <= (others=>'0');
+                    else
+                        b(ch*KERNEL_SIZE_SQ + i*KERNEL_SIZE+j) <= a_buf(ch*KERNEL_SIZE_SQ + i*KERNEL_SIZE+j);
+                    end if;
+                end loop;
             end loop;
         end loop;
     end process;

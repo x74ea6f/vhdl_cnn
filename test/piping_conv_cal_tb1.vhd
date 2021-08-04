@@ -204,12 +204,12 @@ begin
         dd := 0;
         while dd < M*N*IN_CH loop
         -- for k in 0 to M*N loop
-            -- i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
-            -- o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
             -- i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
             -- o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-            i_valid(0) <= '1';
-            o_ready(0) <= '1';
+            -- i_valid(0) <= '1';
+            -- o_ready(0) <= '1';
 
             for i in 0 to IN_CH-1 loop
 
@@ -230,8 +230,18 @@ begin
             wait_clock(clk, 1);
             wait for 1 ns;
         end loop;
+
         i_valid <= (others=>'0');
-        o_ready <= (others=>'1');
+        -- o_ready <= (others=>'1');
+
+        dd := 0;
+        while dd < M loop
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            if o_valid(0)='1' and o_ready(0)='1' then
+                dd := dd + 1;
+            end if;
+            wait_clock(clk, 1);
+        end loop;
 
         wait_clock(clk, 50); -- wait clock rising, 5times
         print("Finish @" + now); -- show Simulation time

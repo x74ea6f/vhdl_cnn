@@ -48,9 +48,8 @@ architecture RTL of piping_conv_line_buf is
     constant LINE_COUNT_MAX : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(N - 1, LINE_COUNT_LEN));
     constant LINE_COUNT_MAX_OR : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(N+KERNEL_SIZE/2 - 1, LINE_COUNT_LEN));
     constant LINE_COUNT_ZERO : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := (others=>'0');
-    constant LINE_COUNT_MASK : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(KERNEL_SIZE/2, LINE_COUNT_LEN));
+    constant LINE_COUNT_MIN_MASK : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(KERNEL_SIZE/2, LINE_COUNT_LEN));
     signal i_line_count : std_logic_vector(LINE_COUNT_LEN - 1 downto 0);
-
 
     signal i_valid_v0: std_logic;
     signal cke0: std_logic;
@@ -66,8 +65,8 @@ architecture RTL of piping_conv_line_buf is
     signal o_valid_mask: std_logic;
     signal o_valid_mask_d: std_logic;
 
-    signal a_d : slv_array_t(0 to CH * P - 1)(DTW - 1 downto 0);
 begin
+
     -- Pix/Line Counter
     process (clk, rstn) begin
         if rstn = '0' then
@@ -99,12 +98,14 @@ begin
         end if;
     end process;
 
-    cke0 <= (not i_valid_v0) or o_ready(0);
+    cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
+    -- cke0 <= (not i_valid_v0) or o_ready(0);
 
-    -- 最初のラインは出力出さない。
     -- 最終ライン後に自走で出力出す。
     buf_run <= '1' when (LINE_COUNT_MAX < i_line_count) and (i_line_count <= LINE_COUNT_MAX_OR) else '0'; --[TODO]
-    o_valid_mask <= '1' when (i_line_count < LINE_COUNT_MASK) else '0'; --[TODO]
+    -- 最初のラインは出力出さない。
+    o_valid_mask <= '1' when (i_line_count < LINE_COUNT_MIN_MASK) else '0'; --[TODO]
+
     i_ready(0) <= cke0 and not buf_run;
     o_valid(0) <= (i_valid_v0 and not o_valid_mask_d) or (buf_run_d);
 
@@ -119,6 +120,7 @@ begin
             end if;
         end if;
     end process;
+
     -- to slv
     process (all)begin
         for i in 0 to CH*P-1 loop
@@ -126,6 +128,7 @@ begin
         end loop;
     end process;
 
+    -- RAM WE, RE
     process (all)begin
         for k in 0 to KERNEL_SIZE-2 loop
             if (unsigned(i_line_count)  mod (KERNEL_SIZE-1)) = k then
@@ -133,12 +136,14 @@ begin
             else
                 ram_we(k) <= '0';
             end if;
-            ram_re(k) <= i_valid(0) and i_ready(0);
+            ram_re(k) <= (i_valid(0) and i_ready(0)) or (buf_run and cke0);
+            -- ram_re(k) <= i_valid(0) and i_ready(0);
         end loop;
     end process;
 
     ram_ce <= ram_re or ram_we;
 
+    -- LineBuffer
     GEN_RAM: for k in 0 to KERNEL_SIZE-2 generate
         lbuf: entity work.ram1rw generic map(
             DTW => DTW*CH*P,
@@ -156,27 +161,22 @@ begin
         );
     end generate;
 
-    process (clk, rstn) begin
-        if rstn = '0' then
-            a_d <= (others=>(others=>'0'));
-        elsif rising_edge(clk) then
-            a_d <= a;
-        end if;
-    end process;
-
+    -- Output Data
     process (clk, rstn) begin
         if rstn = '0' then
             b <= (others=>(others=>'0'));
         elsif rising_edge(clk) then
-            for k in 0 to KERNEL_SIZE-1 loop
-                for i in 0 to CH*P-1 loop
-                    if k=KERNEL_SIZE-1 then
-                        b(k*CH*P + i) <= a(i);
-                    else
-                        b(k*CH*P + i) <= ram_q(to_integer((unsigned(i_line_count)+k) mod (KERNEL_SIZE-1)))(DTW*(i+1)-1 downto DTW*i);
-                    end if;
+            if cke0='1' then
+                for k in 0 to KERNEL_SIZE-1 loop
+                    for i in 0 to CH*P-1 loop
+                        if k=KERNEL_SIZE-1 then
+                            b(k*CH*P + i) <= a(i);
+                        else
+                            b(k*CH*P + i) <= ram_q(to_integer((unsigned(i_line_count)+k) mod (KERNEL_SIZE-1)))(DTW*(i+1)-1 downto DTW*i);
+                        end if;
+                    end loop;
                 end loop;
-            end loop;
+            end if;
         end if;
     end process;
 

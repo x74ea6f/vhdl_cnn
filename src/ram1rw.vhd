@@ -41,6 +41,6 @@ begin
     end process;
 
     q_val <= mem(to_integer(unsigned(a)));
-    q <= q_val;
+    q <= q_val when ce='1' else (others=>'0');
 
 end architecture;

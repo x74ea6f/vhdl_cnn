@@ -17,8 +17,8 @@ entity piping_conv_line_buf is
         M : positive := 28; -- Width
         N : positive := 28; -- Height
         CH : positive := 1; -- Input Channnel
-        DTW : positive := 8; -- Data Width
-        KERNEL_SIZE: positive := 3
+        KERNEL_SIZE: positive := 3;
+        DTW : positive := 8 -- Data Width
     );
     port (
         clk : in std_logic;
@@ -43,31 +43,17 @@ architecture RTL of piping_conv_line_buf is
     constant PIX_COUNT_ZERO : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := (others=>'0');
     signal i_pix_count : std_logic_vector(PIX_COUNT_LEN - 1 downto 0);
 
-    constant LINE_COUNT_LEN : positive := clog2(M);
+    -- With OverRun
+    constant LINE_COUNT_LEN : positive := clog2(N+KERNEL_SIZE/2);
     constant LINE_COUNT_MAX : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(N - 1, LINE_COUNT_LEN));
+    constant LINE_COUNT_MAX_OR : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(N+KERNEL_SIZE/2 - 1, LINE_COUNT_LEN));
     constant LINE_COUNT_ZERO : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := (others=>'0');
+    constant LINE_COUNT_MASK : std_logic_vector(LINE_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(KERNEL_SIZE/2, LINE_COUNT_LEN));
     signal i_line_count : std_logic_vector(LINE_COUNT_LEN - 1 downto 0);
 
-    signal pix_first_v0: std_logic;
-    signal pix_first_v1: std_logic;
-    signal pix_first_v2: std_logic;
-    signal pix_last_v0: std_logic;
-    signal pix_last_v1: std_logic;
-    signal pix_last_v2: std_logic;
-
-    signal line_first_v0: std_logic;
-    signal line_first_v1: std_logic;
-    signal line_first_v2: std_logic;
-    signal line_last_v0: std_logic;
-    signal line_last_v1: std_logic;
-    signal line_last_v2: std_logic;
 
     signal i_valid_v0: std_logic;
-    signal i_valid_v1: std_logic;
-    signal i_valid_v2: std_logic;
     signal cke0: std_logic;
-    signal cke1: std_logic;
-    signal cke2: std_logic;
 
     signal ram_re : sl_array_t(0 to KERNEL_SIZE-2);
     signal ram_ce : sl_array_t(0 to KERNEL_SIZE-2);
@@ -75,6 +61,12 @@ architecture RTL of piping_conv_line_buf is
     signal ram_d : std_logic_vector(DTW*CH*P-1 downto 0);
     signal ram_q : slv_array_t(0 to KERNEL_SIZE-2)(DTW*CH*P - 1 downto 0);
 
+    signal buf_run: std_logic;
+    signal buf_run_d: std_logic;
+    signal o_valid_mask: std_logic;
+    signal o_valid_mask_d: std_logic;
+
+    signal a_d : slv_array_t(0 to CH * P - 1)(DTW - 1 downto 0);
 begin
     -- Pix/Line Counter
     process (clk, rstn) begin
@@ -82,12 +74,12 @@ begin
             i_pix_count <= (others => '0');
             i_line_count <= (others => '0');
         elsif rising_edge(clk) then
-            if (i_valid(0) = '1' and i_ready(0) = '1') then
+            if (i_valid(0) = '1' and i_ready(0) = '1') or (buf_run='1' and cke0='1') then
                 if i_pix_count < PIX_COUNT_MAX then
                     i_pix_count <= f_increment(i_pix_count);
                 else
                     i_pix_count <= PIX_COUNT_ZERO;
-                    if i_line_count < LINE_COUNT_MAX then
+                    if i_line_count < LINE_COUNT_MAX_OR then
                         i_line_count <= f_increment(i_line_count);
                     else
                         i_line_count <= LINE_COUNT_ZERO;
@@ -97,40 +89,40 @@ begin
         end if;
     end process;
 
-    pix_first_v0 <= '1' when i_pix_count=PIX_COUNT_ZERO else '0';
-    pix_last_v0 <= '1' when i_pix_count=PIX_COUNT_MAX else '0';
-    line_first_v0 <= '1' when i_line_count=LINE_COUNT_ZERO else '0';
-    line_last_v0 <= '1' when i_line_count=LINE_COUNT_MAX else '0';
-
     process (clk, rstn) begin
         if rstn = '0' then
             i_valid_v0 <= '0';
-            i_valid_v1 <= '0';
-            i_valid_v2 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
                 i_valid_v0 <= i_valid(0);
-            end if;
-            if cke1='1' then
-                i_valid_v1 <= i_valid_v0;
-            end if;
-            if cke2='1' then
-                i_valid_v2 <= i_valid_v1;
             end if;
         end if;
     end process;
 
     cke0 <= (not i_valid_v0) or o_ready(0);
-    cke1 <= (not i_valid_v1) or o_ready(0);
-    cke2 <= (not i_valid_v2) or o_ready(0);
 
     -- 最初のラインは出力出さない。
     -- 最終ライン後に自走で出力出す。
+    buf_run <= '1' when (LINE_COUNT_MAX < i_line_count) and (i_line_count <= LINE_COUNT_MAX_OR) else '0'; --[TODO]
+    o_valid_mask <= '1' when (i_line_count < LINE_COUNT_MASK) else '0'; --[TODO]
+    i_ready(0) <= cke0 and not buf_run;
+    o_valid(0) <= (i_valid_v0 and not o_valid_mask_d) or (buf_run_d);
 
+    process (clk, rstn) begin
+        if rstn = '0' then
+                buf_run_d <= '0';
+                o_valid_mask_d <= '0';
+        elsif rising_edge(clk) then
+            if cke0='1' then
+                buf_run_d <= buf_run;
+                o_valid_mask_d <= o_valid_mask;
+            end if;
+        end if;
+    end process;
     -- to slv
     process (all)begin
         for i in 0 to CH*P-1 loop
-            ram_d(DTW*(i+1) downto DTW*i) <= a(i);
+            ram_d(DTW*(i+1)-1 downto DTW*i) <= a(i);
         end loop;
     end process;
 
@@ -148,7 +140,7 @@ begin
     ram_ce <= ram_re or ram_we;
 
     GEN_RAM: for k in 0 to KERNEL_SIZE-2 generate
-        piping_conv_buf: entity work.ram1rw generic map(
+        lbuf: entity work.ram1rw generic map(
             DTW => DTW*CH*P,
             ADW => PIX_COUNT_LEN,
             DEPTH => N,
@@ -163,5 +155,29 @@ begin
             q => ram_q(k)
         );
     end generate;
+
+    process (clk, rstn) begin
+        if rstn = '0' then
+            a_d <= (others=>(others=>'0'));
+        elsif rising_edge(clk) then
+            a_d <= a;
+        end if;
+    end process;
+
+    process (clk, rstn) begin
+        if rstn = '0' then
+            b <= (others=>(others=>'0'));
+        elsif rising_edge(clk) then
+            for k in 0 to KERNEL_SIZE-1 loop
+                for i in 0 to CH*P-1 loop
+                    if k=KERNEL_SIZE-1 then
+                        b(k*CH*P + i) <= a(i);
+                    else
+                        b(k*CH*P + i) <= ram_q(to_integer((unsigned(i_line_count)+k) mod (KERNEL_SIZE-1)))(DTW*(i+1)-1 downto DTW*i);
+                    end if;
+                end loop;
+            end loop;
+        end if;
+    end process;
 
 end architecture;

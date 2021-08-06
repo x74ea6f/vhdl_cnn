@@ -132,7 +132,8 @@ architecture SIM of piping_conv_cal_tb3 is
     signal o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
     signal a : slv_array_t(0 to IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
     -- signal a : slv_array_t(0 to KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0):=(others=>(others=>'0'));
-    signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
+    signal b : slv_array_t(0 to OUT_CH * P - 1)(IN_DTW - 1 downto 0);
+    -- signal b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
     signal exp : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0):=(others=>(others=>'0'));
 
     signal lbuf_o_valid : sl_array_t(0 to 1 - 1);
@@ -145,92 +146,113 @@ architecture SIM of piping_conv_cal_tb3 is
 
     signal cal_o_valid : sl_array_t(0 to 1 - 1);
     signal cal_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
-    signal cal : sl_array_t(0 to 1 - 1) := (others=>'0');
     signal cal_b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
 
     signal tmp: integer_vector(0 to OUT_CH*M*N-1);
 
 begin
-    piping_conv_line_buf: entity work.piping_conv_line_buf generic map(
-        P => P,
-        M => M,
-        N => N,
-        CH => IN_CH,
-        KERNEL_SIZE => KERNEL_SIZE,
-        DTW => IN_DTW
-    )port map(
-        clk => clk,
-        rstn => rstn,
-        i_ready => i_ready,
-        i_valid => i_valid,
-        o_ready => lbuf_o_ready,
-        o_valid => lbuf_o_valid,
-        a => a,
-        b => lbuf_b
-    );
-
-    piping_conv_buf: entity work.piping_conv_buf generic map(
-        P => P,
-        M => M,
-        N => N,
-        CH => IN_CH,
-        KERNEL_SIZE => KERNEL_SIZE,
-        DTW => IN_DTW
-    )port map(
-        clk => clk,
-        rstn => rstn,
-        i_ready => lbuf_o_ready,
-        i_valid => lbuf_o_valid,
-        o_ready => buf_o_ready,
-        o_valid => buf_o_valid,
-        a => lbuf_b,
-        b => buf_b
-    );
-
-    piping_conv_cal: entity work.piping_conv_cal generic map(
+    piping_conv: entity work.piping_conv generic map(
         P => P,
         M => M,
         N => N,
         IN_CH => IN_CH,
         OUT_CH => OUT_CH,
         KERNEL_SIZE => KERNEL_SIZE,
-        IN_DTW => IN_DTW,
-        OUT_DTW => OUT_DTW,
+        DTW => IN_DTW, 
+        CAL_DTW => OUT_DTW,
         W_DTW => W_DTW,
-        KERNEL_WEIGHT => KERNEL_WEIGHT 
+        KERNEL_WEIGHT => KERNEL_WEIGHT
     )port map(
         clk => clk,
         rstn => rstn,
-        i_ready => buf_o_ready,
-        i_valid => buf_o_valid,
-        o_ready => cal_o_ready,
-        o_valid => cal_o_valid,
-        a => buf_b,
-        b => cal_b
-    );
-
-
-    piping_scale: entity work.piping_scale generic map(
-        P => OUT_CH,
-        N => 1,
-        A_DTW => OUT_DTW,
-        B_DTW => OUT_DTW,
-        SCALE_DTW => 10,
-        SCALE => 531,
-        SFT_NUM => 16,
-        OUT_UNSIGNED => True
-    ) port map(
-        clk => clk,
-        rstn => rstn,
-
-        i_valid => cal_o_valid,
-        i_ready => cal_o_ready,
-        o_valid => o_valid,
+        i_ready => i_ready,
+        i_valid => i_valid,
         o_ready => o_ready,
-
-        a => cal_b,
+        o_valid => o_valid,
+        a => a,
         b => b
     );
+
+    -- piping_conv_line_buf: entity work.piping_conv_line_buf generic map(
+    --     P => P,
+    --     M => M,
+    --     N => N,
+    --     CH => IN_CH,
+    --     KERNEL_SIZE => KERNEL_SIZE,
+    --     DTW => IN_DTW
+    -- )port map(
+    --     clk => clk,
+    --     rstn => rstn,
+    --     i_ready => i_ready,
+    --     i_valid => i_valid,
+    --     o_ready => lbuf_o_ready,
+    --     o_valid => lbuf_o_valid,
+    --     a => a,
+    --     b => lbuf_b
+    -- );
+
+    -- piping_conv_buf: entity work.piping_conv_buf generic map(
+    --     P => P,
+    --     M => M,
+    --     N => N,
+    --     CH => IN_CH,
+    --     KERNEL_SIZE => KERNEL_SIZE,
+    --     DTW => IN_DTW
+    -- )port map(
+    --     clk => clk,
+    --     rstn => rstn,
+    --     i_ready => lbuf_o_ready,
+    --     i_valid => lbuf_o_valid,
+    --     o_ready => buf_o_ready,
+    --     o_valid => buf_o_valid,
+    --     a => lbuf_b,
+    --     b => buf_b
+    -- );
+
+    -- piping_conv_cal: entity work.piping_conv_cal generic map(
+    --     P => P,
+    --     M => M,
+    --     N => N,
+    --     IN_CH => IN_CH,
+    --     OUT_CH => OUT_CH,
+    --     KERNEL_SIZE => KERNEL_SIZE,
+    --     IN_DTW => IN_DTW,
+    --     OUT_DTW => OUT_DTW,
+    --     W_DTW => W_DTW,
+    --     KERNEL_WEIGHT => KERNEL_WEIGHT 
+    -- )port map(
+    --     clk => clk,
+    --     rstn => rstn,
+    --     i_ready => buf_o_ready,
+    --     i_valid => buf_o_valid,
+    --     o_ready => cal_o_ready,
+    --     o_valid => cal_o_valid,
+    --     a => buf_b,
+    --     b => cal_b
+    -- );
+
+
+    -- piping_scale: entity work.piping_scale generic map(
+    --     P => OUT_CH,
+    --     N => 1,
+    --     A_DTW => OUT_DTW,
+    --     B_DTW => IN_DTW,
+    --     SCALE_DTW => 10,
+    --     SCALE => 531,
+    --     SFT_NUM => 16,
+    --     OUT_UNSIGNED => True
+    -- ) port map(
+    --     clk => clk,
+    --     rstn => rstn,
+
+    --     i_valid => cal_o_valid,
+    --     i_ready => cal_o_ready,
+    --     o_valid => o_valid,
+    --     o_ready => o_ready,
+
+    --     a => cal_b,
+    --     b => b
+    -- );
 
 
 

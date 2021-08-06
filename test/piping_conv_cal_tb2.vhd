@@ -177,14 +177,12 @@ begin
         i_valid <= (others=>'0');
         -- o_ready <= (others=>'1');
 
-        dd := 0;
-        while dd < M loop
+        for i in 0 to M*8 loop
             o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
-            if o_valid(0)='1' and o_ready(0)='1' then
-                dd := dd + 1;
-            end if;
             wait_clock(clk, 1);
+            wait for 1 ns;
         end loop;
+        o_ready <= (others=>'1');
 
         wait_clock(clk, 50); -- wait clock rising, 5times
         print("Finish @" + now); -- show Simulation time

@@ -368,7 +368,8 @@ begin
                 for oc in 0 to OUT_CH -1 loop
                     -- print(to_str(b(oc), DEC_S) & ",", False);
                     if oc=0 then
-                        check(signed(b(oc)), to_signed(X_POST_INT(oo/4), IN_DTW), "Output:" & to_str(oo/4), True);
+                        check(signed(b(oc)), to_signed(X_POST_INT(oo/4), IN_DTW),
+                          "Output:(" & to_str(oo/4/M) & "," & to_str(oo/4 mod M) & ")", True);
                     end if;
                     tmp(oo) <= to_integer(signed(b(oc)));
                     oo := oo + 1;

@@ -3,6 +3,9 @@
 -- - P=1しかできない。
 -- 
 -- 
+
+--[TODO] line_bufみたいに、カウンタを1個多く回す。
+
 library ieee;
 library work;
 use work.piping_pkg.all;
@@ -41,8 +44,9 @@ architecture RTL of piping_conv_buf is
 
     signal a_buf : slv_array_t(0 to CH*KERNEL_SIZE_SQ - 1)(DTW - 1 downto 0);
 
-    constant PIX_COUNT_LEN : positive := clog2(M);
+    constant PIX_COUNT_LEN : positive := clog2(M+KERNEL_SIZE/2);
     constant PIX_COUNT_MAX : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M - 1, PIX_COUNT_LEN));
+    constant PIX_COUNT_MAX_OR : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := std_logic_vector(to_unsigned(M + KERNEL_SIZE/2 - 1, PIX_COUNT_LEN));
     constant PIX_COUNT_ZERO : std_logic_vector(PIX_COUNT_LEN - 1 downto 0) := (others=>'0');
     signal i_pix_count : std_logic_vector(PIX_COUNT_LEN - 1 downto 0);
 
@@ -86,8 +90,9 @@ begin
             i_pix_count <= (others => '0');
             i_line_count <= (others => '0');
         elsif rising_edge(clk) then
-            if (i_valid(0) = '1' and i_ready(0) = '1') then
+            if (i_valid(0) = '1' and i_ready(0) = '1')  or (buf_run='1' and cke0='1') then
                 if i_pix_count < PIX_COUNT_MAX then
+                -- if i_pix_count < PIX_COUNT_MAX_OR then
                     i_pix_count <= f_increment(i_pix_count);
                 else
                     i_pix_count <= PIX_COUNT_ZERO;
@@ -101,6 +106,7 @@ begin
         end if;
     end process;
 
+    --[TODO] MaskとBufRun
     pix_first_v0 <= '1' when i_pix_count=PIX_COUNT_ZERO else '0';
     pix_last_v0 <= '1' when i_pix_count=PIX_COUNT_MAX else '0';
     line_first_v0 <= '1' when i_line_count=LINE_COUNT_ZERO else '0';
@@ -117,8 +123,7 @@ begin
             pix_first_v2 <= '0';
             pix_last_v2 <= '0';
         elsif rising_edge(clk) then
-            if (i_valid(0) = '1' and i_ready(0) = '1') or buf_run='1' then
-            -- if (i_valid(0) = '1' and i_ready(0) = '1') then
+            if (i_valid(0) = '1' and i_ready(0) = '1') or (buf_run='1' and cke0='1') then
                 pix_first_v1 <= pix_first_v0;
                 pix_last_v1 <= pix_last_v0;
                 line_first_v1 <= line_first_v0;
@@ -143,10 +148,13 @@ begin
 
 
     -- 最後のピクセルは進める。
-    buf_run <= pix_last_v0_pls and line_last_v0_d;
+    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
+    buf_run <= '1' when (LINE_COUNT_MAX<=i_line_count) and (PIX_COUNT_MAX <= i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
+    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
+    -- buf_run <= pix_last_v0_pls and line_last_v0_d; --[TODO]
 
     -- 最初のピクセルはValidマスク
-    o_valid_mask <= pix_first_v0 and line_first_v0;
+    o_valid_mask <= (pix_first_v0 and line_first_v0) and (not buf_run_d);
 
     process (clk, rstn) begin
         if rstn = '0' then
@@ -154,9 +162,11 @@ begin
             o_valid_mask_d <= '0';
             line_last_v0_d <= '0';
         elsif rising_edge(clk) then
+            if cke0='1' then --TMP
             line_last_v0_d <= line_last_v0;
             buf_run_d <= buf_run;
             o_valid_mask_d <= o_valid_mask;
+            end if;
         end if;
     end process;
 
@@ -167,7 +177,8 @@ begin
             i_valid_v2 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
-                i_valid_v0 <= i_valid(0);
+                i_valid_v0 <= i_valid(0) or buf_run_d;
+                --TMP i_valid_v0 <= i_valid(0);
             end if;
             if cke1='1' then
                 i_valid_v1 <= i_valid_v0;
@@ -179,11 +190,12 @@ begin
     end process;
 
     cke0 <= (not i_valid_v0) or o_ready(0);
+    --TMP cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
     cke1 <= (not i_valid_v1) or o_ready(0);
     cke2 <= (not i_valid_v2) or o_ready(0);
 
     -- ライン最終Pixは、入力を止めて内部処理だけ進める。
-    i_ready(0) <= cke0 and not buf_run;
+    i_ready(0) <= cke0 and not buf_run_d;
     -- 最初に出さない、最後に余計に出す。
     o_valid(0) <= (i_valid_v0 and not o_valid_mask_d) or (buf_run_d);
     -- o_valid(0) <= (i_valid_v0 and not (pix_first_v0_d and line_first_v0_d)) or (buf_run_d);
@@ -192,7 +204,7 @@ begin
         if rstn = '0' then
             a_buf <= (others => (others => '0'));
         elsif rising_edge(clk) then
-            if cke0='1' and ((i_valid(0)='1' and i_ready(0)='1') or buf_run='1') then
+            if cke0='1' and ((i_valid(0)='1' and i_ready(0)='1') or buf_run_d='1') then
                 for ch in 0 to (CH -1) loop
                     for j in 0 to (KERNEL_SIZE - 1) loop
                         for i in 0 to (KERNEL_SIZE - 1) loop

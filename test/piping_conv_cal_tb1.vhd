@@ -147,12 +147,12 @@ begin
         dd := 0;
         while dd < M*N*IN_CH loop
         -- for k in 0 to M*N loop
-            -- i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
-            -- o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
+            o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
             -- i_valid(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
             -- o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "01" else '0';
-            i_valid(0) <= '1';
-            o_ready(0) <= '1';
+            -- i_valid(0) <= '1';
+            -- o_ready(0) <= '1';
 
             for i in 0 to IN_CH-1 loop
 
@@ -180,6 +180,7 @@ begin
         for i in 0 to M*8 loop
             o_ready(0) <= '1' when unsigned(rand_slv(2)) >= "11" else '0';
             wait_clock(clk, 1);
+            wait for 1 ns;
         end loop;
         o_ready <= (others=>'1');
 

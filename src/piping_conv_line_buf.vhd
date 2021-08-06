@@ -93,13 +93,14 @@ begin
             i_valid_v0 <= '0';
         elsif rising_edge(clk) then
             if cke0='1' then
-                i_valid_v0 <= i_valid(0);
+                i_valid_v0 <= i_valid(0) or buf_run;
+                --TMP i_valid_v0 <= i_valid(0);
             end if;
         end if;
     end process;
 
-    cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
-    -- cke0 <= (not i_valid_v0) or o_ready(0);
+    --TMP cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
+    cke0 <= (not i_valid_v0) or o_ready(0);
 
     -- 最終ライン後に自走で出力出す。
     buf_run <= '1' when (LINE_COUNT_MAX < i_line_count) and (i_line_count <= LINE_COUNT_MAX_OR) else '0'; --[TODO]

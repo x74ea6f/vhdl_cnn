@@ -143,6 +143,11 @@ architecture SIM of piping_conv_cal_tb3 is
     signal buf_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
     signal buf_b : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * IN_CH * P - 1)(IN_DTW - 1 downto 0);
 
+    signal cal_o_valid : sl_array_t(0 to 1 - 1);
+    signal cal_o_ready : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal cal : sl_array_t(0 to 1 - 1) := (others=>'0');
+    signal cal_b : slv_array_t(0 to OUT_CH * P - 1)(OUT_DTW - 1 downto 0);
+
     signal tmp: integer_vector(0 to OUT_CH*M*N-1);
 
 begin
@@ -198,11 +203,37 @@ begin
         rstn => rstn,
         i_ready => buf_o_ready,
         i_valid => buf_o_valid,
-        o_ready => o_ready,
-        o_valid => o_valid,
+        o_ready => cal_o_ready,
+        o_valid => cal_o_valid,
         a => buf_b,
+        b => cal_b
+    );
+
+
+    piping_scale: entity work.piping_scale generic map(
+        P => OUT_CH,
+        N => 1,
+        A_DTW => OUT_DTW,
+        B_DTW => OUT_DTW,
+        SCALE_DTW => 10,
+        SCALE => 531,
+        SFT_NUM => 16,
+        OUT_UNSIGNED => True
+    ) port map(
+        clk => clk,
+        rstn => rstn,
+
+        i_valid => cal_o_valid,
+        i_ready => cal_o_ready,
+        o_valid => o_valid,
+        o_ready => o_ready,
+
+        a => cal_b,
         b => b
     );
+
+
+
     process begin
         make_clock(clk, 5 ns); -- 10ns clock
     end process;

@@ -60,13 +60,17 @@ architecture RTL of piping_conv_cal is
         a : slv_array_t(0 to IN_CH * KERNEL_SIZE_2 - 1)(IN_DTW - 1 downto 0);
         w : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(W_DTW - 1 downto 0)
     ) return slv_array_t is
+        variable aa : std_logic_vector(IN_DTW-1 downto 0);
         variable ret : slv_array_t(0 to OUT_CH * KERNEL_SIZE_2 - 1)(OUT_DTW - 1 downto 0);
     begin
         for oc in 0 to OUT_CH/IN_CH - 1 loop
             for ic in 0 to IN_CH - 1 loop
                 for k in 0 to (KERNEL_SIZE_2 - 1) loop
-                    ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*KERNEL_SIZE_2+k), w(oc * KERNEL_SIZE_2 + k)), OUT_DTW);
-                    -- ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*IN_CH+k), w(ic * KERNEL_SIZE_2 + k)), OUT_DTW);
+                    aa := a(ic*KERNEL_SIZE_2+k);
+                    -- aa := '0' & f_clip_s(aa, IN_DTW-1);
+                    ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) :=
+                        f_clip_s(f_mul_s(aa, w(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k)), OUT_DTW);
+                    -- ret(oc*IN_CH*KERNEL_SIZE_2 + ic * KERNEL_SIZE_2 + k) := f_clip_s(f_mul_s(a(ic*KERNEL_SIZE_2+k), w(oc * KERNEL_SIZE_2 + k)), OUT_DTW);
                 end loop;
             end loop;
         end loop;

@@ -257,14 +257,17 @@ begin
 
         wait_clock(clk, 50); -- wait clock rising, 5times
 
+        for k in 0 to 4 -1 loop
+            print("-- " & to_str(k));
         for i in 0 to M*N-1 loop
-            t := tmp(i*OUT_CH+3);
-            t := (t * 8)/100; -- 0.008
+            t := tmp(i*OUT_CH+k);
+            -- t := (t * 8)/100; -- 0.008
             t := t when t>0 else 0;
             print(to_str(t) & ",", False);
             if (i mod M) = M-1 then
                 print("", True);
             end if;
+        end loop;
         end loop;
 
         print("Finish @" + now); -- show Simulation time

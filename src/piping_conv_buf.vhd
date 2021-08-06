@@ -162,10 +162,10 @@ begin
             o_valid_mask_d <= '0';
             line_last_v0_d <= '0';
         elsif rising_edge(clk) then
-            if cke0='1' then --TMP
-            line_last_v0_d <= line_last_v0;
-            buf_run_d <= buf_run;
-            o_valid_mask_d <= o_valid_mask;
+            if cke0='1' then
+                line_last_v0_d <= line_last_v0;
+                buf_run_d <= buf_run;
+                o_valid_mask_d <= o_valid_mask;
             end if;
         end if;
     end process;
@@ -178,7 +178,6 @@ begin
         elsif rising_edge(clk) then
             if cke0='1' then
                 i_valid_v0 <= i_valid(0) or buf_run_d;
-                --TMP i_valid_v0 <= i_valid(0);
             end if;
             if cke1='1' then
                 i_valid_v1 <= i_valid_v0;
@@ -190,7 +189,6 @@ begin
     end process;
 
     cke0 <= (not i_valid_v0) or o_ready(0);
-    --TMP cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
     cke1 <= (not i_valid_v1) or o_ready(0);
     cke2 <= (not i_valid_v2) or o_ready(0);
 

@@ -94,12 +94,10 @@ begin
         elsif rising_edge(clk) then
             if cke0='1' then
                 i_valid_v0 <= i_valid(0) or buf_run;
-                --TMP i_valid_v0 <= i_valid(0);
             end if;
         end if;
     end process;
 
-    --TMP cke0 <= (not (i_valid_v0 or buf_run)) or o_ready(0);
     cke0 <= (not i_valid_v0) or o_ready(0);
 
     -- 最終ライン後に自走で出力出す。

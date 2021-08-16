@@ -4,7 +4,7 @@ cnnの推論部分をVHDLで実装を行う。
 
 ## 仕様
 ### Base Python
-- ここのPython実装の推論部分をVHDL化することが目標。
+- ここのPython実装のMNISTの推論部分をVHDL化することが目標。
   - [FPGA で始めるエッジディープラーニング (2) | ACRi Blog](https://www.acri.c.titech.ac.jp/wordpress/archives/5786)
 - 上PythonではFloat実装なので論理実装しやすいように量子化(Quantize, int化)を行う。
 - 大きく分けて4ブロック。
@@ -42,20 +42,20 @@ cnnの推論部分をVHDLで実装を行う。
 - Run: py/q/cnn_predict_q.py
 
 ## work
-- 全結合層
+- 全結合層(Linear)
   - 実装・検証完了
   - RTL: src/piping_linear.vhd
   - TB: test/piping_linear_tb*.vhd
-- 畳み込み層
+- 畳み込み層(Conv2d)
   - 実装・検証完了
   - RTL: src/piping_conv.vhd
   - TB: test/piping_conv_tb*.vhd
-- プーリング層
+- プーリング層(MaxPool2d)
   - 未着手
-ｰ 活性化関数
+ｰ 活性化関数(ReLu)
   - 未着手
 
-- TOP
-  - 未着手
 - AXI I/F
+  - 未着手
+- TOP
   - 未着手

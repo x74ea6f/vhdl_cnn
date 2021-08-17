@@ -13,6 +13,7 @@ cnnの推論部分をVHDLで実装を行う。
   - プーリング層
   ｰ 活性化関数
 - 各層間のI/FはValid-Ready+Dataのシンプルに。
+  - 勝手にpipingと呼んでる。
 
 ### 量子化
 -[How to Quantize an MNIST network to 8 bits in Pytorch from scratch (No retraining required). | by Karanbir Chahal | Medium](https://karanbirchahal.medium.com/how-to-quantise-an-mnist-network-to-8-bits-in-pytorch-no-retraining-required-from-scratch-39f634ac8459)
@@ -59,3 +60,78 @@ cnnの推論部分をVHDLで実装を行う。
   - 未着手
 - AXI I/F
   - 未着手
+
+
+## 全結合層(Linear)
+### 式
+
+```math
+X=\begin{bmatrix}
+x_{0} \\
+\vdots \\
+x_{i} \\
+\vdots \\
+x_{m} \\
+\end{bmatrix}
+\\
+W=\begin{bmatrix}
+w_{00} & \cdots & w_{0i} & \cdots & w_{0m}\\
+\vdots & \ddots & & & \vdots \\
+w_{i0} & & w_{ii} & & w_{im} \\
+\vdots & & & \ddots & \vdots \\
+w_{n0} & \cdots & w_{ni} & \cdots & w_{nm}
+\end{bmatrix}
+\\
+B=\begin{bmatrix}
+b_{0} \\
+\vdots \\
+b_{i} \\
+\vdots \\
+b_{n} \\
+\end{bmatrix}
+\\
+SCL=scale >> scale\_shift
+\\
+Y=\begin{bmatrix}
+y_{0} \\
+\vdots \\
+y_{i} \\
+\vdots \\
+y_{n} \\
+\end{bmatrix}
+\\
+Y = (W \cdot X + B) \times SCL \\
+\\
+```
+
+### パラメータ
+Pythonでの学習結果より与える。  
+RTLではトップからのパラメータ。  
+Wnm: 自然数配列  
+Bn: 自然数配列  
+SCL.scale: 自然数(1..255)  
+SCL.shift: 自然数(0..16)  
+
+### RTL構成
+
+RTL Hierarchy
+| Instance(File) | | Description |
+|-|-| - |
+| piping_linear.vhd | | Linear Top |
+| ├ | w_ram_control<br>(piping_ram_control.vhd) | W-RAM Control |
+| ├ | w_ram<br>(ram1rw.vhd) | Weight RAM |
+| ├ | piping_mul<br>(piping_mul.vhd) | Multiplier Weight |
+| ├ | piping_sum<br>(piping_sum.vhd) | Sum |
+| ├ | b_ram_control<br>(piping_ram_control.vhd) | B-RAM Control |
+| ├ | b_ram<br>(ram1rw.vhd) | Bias RAM |
+| ├ | piping_add<br>(piping_add.vhd) | Adder Bias |
+| ├ | piping_scale<br>(piping_scale.vhd) | Scaling for Quantize |
+
+## 畳み込み層(Conv2d)
+### 式
+```math
+Y(i,j) = \sum_{m} \sum_{n}W(m,n) \cdot X(i-m,j-n)
+```
+### RTL構成
+
+

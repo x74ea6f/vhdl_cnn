@@ -24,7 +24,7 @@ cnnの推論部分をVHDLで実装を行う。
 - [組み込み屋の為のVerilog入門 その5 VALID&READYのハンドシェーク: Ryuzのブログ](http://ryuz.txt-nifty.com/blog/2012/09/verilog-s-c79f.html)
   - 途中でみつけたので今回はごちゃごちゃやってる。
 
-### 細かいところ
+### 他
 - 色々できるように、パラメタライズしておく。
 - Weight等のパラメータは、トップ階層からgenericで渡す。
 - 1次元配列のみ使用。
@@ -55,7 +55,7 @@ cnnの推論部分をVHDLで実装を行う。
 ｰ 活性化関数(ReLu)
   - 未着手
 
-- AXI I/F
-  - 未着手
 - TOP
+  - 未着手
+- AXI I/F
   - 未着手

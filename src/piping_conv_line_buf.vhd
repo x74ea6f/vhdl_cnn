@@ -101,9 +101,9 @@ begin
     cke0 <= (not i_valid_v0) or o_ready(0);
 
     -- 最終ライン後に自走で出力出す。
-    buf_run <= '1' when (LINE_COUNT_MAX < i_line_count) and (i_line_count <= LINE_COUNT_MAX_OR) else '0'; --[TODO]
+    buf_run <= '1' when (LINE_COUNT_MAX < i_line_count) and (i_line_count <= LINE_COUNT_MAX_OR) else '0';
     -- 最初のラインは出力出さない。
-    o_valid_mask <= '1' when (i_line_count < LINE_COUNT_MIN_MASK) else '0'; --[TODO]
+    o_valid_mask <= '1' when (i_line_count < LINE_COUNT_MIN_MASK) else '0';
 
     i_ready(0) <= cke0 and not buf_run;
     o_valid(0) <= (i_valid_v0 and not o_valid_mask_d) or (buf_run_d);

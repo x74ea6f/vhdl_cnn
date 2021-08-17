@@ -4,7 +4,6 @@
 -- 
 -- 
 
---[TODO] line_bufみたいに、カウンタを1個多く回す。
 
 library ieee;
 library work;
@@ -106,7 +105,7 @@ begin
         end if;
     end process;
 
-    --[TODO] MaskとBufRun
+    -- MaskとBufRun
     pix_first_v0 <= '1' when i_pix_count=PIX_COUNT_ZERO else '0';
     pix_last_v0 <= '1' when i_pix_count=PIX_COUNT_MAX else '0';
     line_first_v0 <= '1' when i_line_count=LINE_COUNT_ZERO else '0';
@@ -148,10 +147,10 @@ begin
 
 
     -- 最後のピクセルは進める。
-    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
-    buf_run <= '1' when (LINE_COUNT_MAX<=i_line_count) and (PIX_COUNT_MAX <= i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
-    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0'; --[TODO]
-    -- buf_run <= pix_last_v0_pls and line_last_v0_d; --[TODO]
+    buf_run <= '1' when (LINE_COUNT_MAX<=i_line_count) and (PIX_COUNT_MAX <= i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0';
+    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0';
+    -- buf_run <= '1' when (PIX_COUNT_MAX < i_pix_count) and (i_pix_count <= PIX_COUNT_MAX_OR) else '0';
+    -- buf_run <= pix_last_v0_pls and line_last_v0_d;
 
     -- 最初のピクセルはValidマスク
     o_valid_mask <= (pix_first_v0 and line_first_v0) and (not buf_run_d);

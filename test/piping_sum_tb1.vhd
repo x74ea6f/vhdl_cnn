@@ -62,7 +62,6 @@ begin
         make_clock(clk, 5 ns); -- 10ns clock
     end process;
 
-    --[TODO]
     -- make expected data
     process (clk)
     begin

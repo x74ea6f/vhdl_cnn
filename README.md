@@ -42,20 +42,19 @@ cnnの推論部分をVHDLで実装を行う。
 - Pytorch: 1.6,0
 - Run: py/q/cnn_predict_q.py
 
-## work
-- 全結合層(Linear)
-  - 実装・検証完了
-  - RTL: src/piping_linear.vhd
-  - TB: test/piping_linear_tb*.vhd
-- 畳み込み層(Conv2d)
-  - 実装・検証完了
-  - RTL: src/piping_conv.vhd
-  - TB: test/piping_conv_tb*.vhd
-- プーリング層(MaxPool2d)
+## working
+- 全結合層(Linear)  
+  - 実装・検証完了  
+  - RTL: src/piping_linear.vhd  
+  - TB: test/piping_linear_tb*.vhd  
+- 畳み込み層(Conv2d)  
+  - 実装・検証完了  
+  - RTL: src/piping_conv.vhd  
+  - TB: test/piping_conv_tb*.vhd  
+- プーリング層(MaxPool2d)  
+  - 未着手  
+- 活性化関数(ReLu)  
   - 未着手
-ｰ 活性化関数(ReLu)
-  - 未着手
-
 - TOP
   - 未着手
 - AXI I/F

@@ -11,12 +11,15 @@ cnnの推論部分をVHDLで実装を行う。
   - 全結合層
   - 畳み込み層
   - プーリング層
-  ｰ 活性化関数
+  - 活性化関数
 - 各層間のI/FはValid-Ready+Dataのシンプルに。
   - 勝手にpipingと呼んでる。
 
 ### 量子化
--[How to Quantize an MNIST network to 8 bits in Pytorch from scratch (No retraining required). | by Karanbir Chahal | Medium](https://karanbirchahal.medium.com/how-to-quantise-an-mnist-network-to-8-bits-in-pytorch-no-retraining-required-from-scratch-39f634ac8459)
+RTLで扱いやすいように、Pythonでは量子化を行ったもので学習と推論を行う。  
+(量子化前と比べ、正答率は多少落ちた)  
+
+- [How to Quantize an MNIST network to 8 bits in Pytorch from scratch (No retraining required). | by Karanbir Chahal | Medium](https://karanbirchahal.medium.com/how-to-quantise-an-mnist-network-to-8-bits-in-pytorch-no-retraining-required-from-scratch-39f634ac8459)
   - [quantisation.ipynb - Colaboratory](https://colab.research.google.com/drive/1oDfcLRz2AIgsclkXJHj-5wMvbylr4Nxz#scrollTo=M5xNLrchrI6u)
 
 - [(beta) Static Quantization with Eager Mode in PyTorch — PyTorch Tutorials 1.9.0+cu102 documentation](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
@@ -28,7 +31,8 @@ cnnの推論部分をVHDLで実装を行う。
 ### 他
 - 色々できるように、パラメタライズしておく。
 - Weight等のパラメータは、トップ階層からgenericで渡す。
-- 1次元配列のみ使用。
+- 1次元配列のみ使用。  
+  - 2次元配列は、1次元配列を配列サイズから疑似2次元として扱う。
 
 ## 実行環境
 ### RTL側
@@ -106,17 +110,17 @@ Y = (W \cdot X + B) \times SCL \\
 ### パラメータ
 Pythonでの学習結果より与える。  
 RTLではトップからのパラメータ。  
-Wnm: 自然数配列  
-Bn: 自然数配列  
-SCL.scale: 自然数(1..255)  
-SCL.shift: 自然数(0..16)  
+Wnm: 整数配列, Python2次元からRTLでは1次元  
+Bn: 整数配列, 1次元配列  
+SCL.scale: 自然数  
+SCL.shift: 自然数  
 
 ### RTL構成
 
 RTL Hierarchy
 | Instance(File) | | Description |
 |-|-| - |
-| piping_linear.vhd | | Linear Top |
+| (piping_linear.vhd) | | Linear Top |
 | ├ | w_ram_control<br>(piping_ram_control.vhd) | W-RAM Control |
 | ├ | w_ram<br>(ram1rw.vhd) | Weight RAM |
 | ├ | piping_mul<br>(piping_mul.vhd) | Multiplier Weight |
@@ -129,8 +133,25 @@ RTL Hierarchy
 ## 畳み込み層(Conv2d)
 ### 式
 ```math
-Y(i,j) = \sum_{m} \sum_{n}W(m,n) \cdot X(i-m,j-n)
+SCL=scale >> scale\_shift  \\
+Y(i,j) = (\sum_{m} \sum_{n}W(m,n) \cdot X(i-m,j-n)) \times SCL
 ```
+Quoted from [FPGA で始めるエッジディープラーニング (2) | ACRi Blog](https://www.acri.c.titech.ac.jp/wordpress/archives/5786)
+
+### パラメータ
+Pythonでの学習結果より与える。  
+RTLではトップからのパラメータ。  
+W: KERNEL_WEIGHT, 今回は3x3の整数配列。RTLでは1次元(9).  
+SCL.scale: 自然数  
+SCL.shift: 自然数  
+
 ### RTL構成
 
+| Instance(File) | | Description |
+|-|-| - |
+| (piping_conv.vhd) | | Conv Top |
+| ├ | piping_conv_line_buf<br>(piping_conv_line_buf.vhd) | Line Bufffer |
+| ├ | piping_conv_buf<br>(piping_conv_buf.vhd) | Pix Buffer |
+| ├ | piping_conv_cal<br>(piping_conv_cal.vhd) | Calc, Multiplier Weight |
+| ├ | piping_scale<br>(piping_scale.vhd) | Scale |
 

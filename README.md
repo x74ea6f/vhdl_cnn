@@ -71,7 +71,7 @@ RTLで扱いやすいように、Pythonでは量子化を行ったもので学�
 <img src="https://latex.codecogs.com/svg.latex?B=\begin{bmatrix}&space;b_{0}\\&space;\vdots\\&space;b_{i}\\&space;\vdots\\&space;b_{n}\\&space;\end{bmatrix}"><br>
 <img src="https://latex.codecogs.com/svg.latex?SCL=scale>>scale\_shift"><br>
 <img src="https://latex.codecogs.com/svg.latex?Y=\begin{bmatrix}&space;y_{0}\\&space;\vdots\\&space;y_{i}\\&space;\vdots\\&space;y_{n}\\&space;\end{bmatrix}"><br>
-
+<img src="https://latex.codecogs.com/svg.latex?Y=(W&space;\cdot&space;X&space;&plus;&space;B)&space;\times&space;SCL"><br>
 <!--
 github上で表示されないのでlatex.codecogs.com。
 ```math

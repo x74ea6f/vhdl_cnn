@@ -15,7 +15,7 @@ entity piping_scale is
         B_DTW : positive := 8; -- Input B Data Width
         SCALE_DTW: positive := 8; -- Scale Width
         SCALE : positive := 2; -- Constant Scale(0 to 255)
-        SFT_NUM : positive := 1; -- Shift
+        SFT_NUM : natural := 1; -- Shift
         OUT_UNSIGNED : boolean := True
     );
     port (

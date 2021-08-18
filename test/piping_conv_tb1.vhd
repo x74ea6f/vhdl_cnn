@@ -156,6 +156,10 @@ architecture SIM of piping_conv_tb1 is
     -- constant KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := center_weight;
     constant X_PRE : slv_array_t(0 to M*N*IN_CH - 1)(IN_DTW - 1 downto 0) := int2mem(X_PRE_INT, IN_DTW);
 
+    constant SCALE_DTW: positive := 10;
+    constant SCALE: positive := 531;
+    constant SCALE_SFT: natural := 16;
+
     signal clk: std_logic := '0';
     signal rstn: std_logic := '0';
     signal i_valid : sl_array_t(0 to 1 - 1) := (others=>'0');
@@ -193,7 +197,10 @@ begin
         DTW => IN_DTW, 
         CAL_DTW => OUT_DTW,
         W_DTW => W_DTW,
-        KERNEL_WEIGHT => KERNEL_WEIGHT
+        KERNEL_WEIGHT => KERNEL_WEIGHT,
+        SCALE_DTW => SCALE_DTW,
+        SCALE => SCALE,
+        SCALE_SFT => SCALE_SFT
     )port map(
         clk => clk,
         rstn => rstn,

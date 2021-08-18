@@ -17,6 +17,10 @@ basefiles="\
 ../src/piping_ram_control.vhd \
 ../src/piping_scale.vhd \
 ../src/piping_linear.vhd \
+../src/piping_conv_buf.vhd \
+../src/piping_conv_line_buf.vhd \
+../src/piping_conv_cal.vhd \
+../src/piping_conv.vhd \
 ../src/fc1_rom.vhd \
 ../src/fc2_rom.vhd \
 "

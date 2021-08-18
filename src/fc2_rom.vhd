@@ -32,7 +32,7 @@ package fc2_rom is
 -32,-20,-28,14,-4,30,-5,9,-13,-36
     );
     constant FC2_SCALE: positive := 148;
-    constant FC2_SCALE_SFT: positive := 15;
+    constant FC2_SCALE_SFT: natural := 15;
 
     constant FC2_W: mem_t(0 to FC2_M_P-1)(FC2_P*FC2_N*FC2_DTW-1 downto 0);
     constant FC2_B: mem_t(0 to FC2_N_P-1)(FC2_P*FC2_DTW-1 downto 0);

@@ -18,7 +18,10 @@ entity piping_conv is
         DTW : positive := 8; -- Data Width
         CAL_DTW: positive := 8+4; -- Calc sum Data Width
         W_DTW: positive := 8; -- Weight Data Width
-        KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := (others=>(others=>'0'))
+        KERNEL_WEIGHT : slv_array_t(0 to KERNEL_SIZE * KERNEL_SIZE * OUT_CH - 1)(W_DTW - 1 downto 0) := (others=>(others=>'0'));
+        SCALE_DTW: positive:= 8;
+        SCALE: positive:= 1;
+        SCALE_SFT: natural:= 0
     );
     port (
         clk : in std_logic;
@@ -112,9 +115,9 @@ begin
         N => 1,
         A_DTW => CAL_DTW,
         B_DTW => DTW,
-        SCALE_DTW => 10,
-        SCALE => 531,
-        SFT_NUM => 16,
+        SCALE_DTW => SCALE_DTW,
+        SCALE => SCALE,
+        SFT_NUM => SCALE_SFT,
         OUT_UNSIGNED => True
     ) port map(
         clk => clk,

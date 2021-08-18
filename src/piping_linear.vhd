@@ -16,8 +16,8 @@ entity piping_linear is
         MUL_NUM : positive := 4; -- Number of Multiplier = MUL_NUM*P
         W_MEM_INIT : mem_t(0 to (N + P - 1)/P - 1)(P * M * A_DTW - 1 downto 0) := (others => (others => '0'));
         B_MEM_INIT : mem_t(0 to (M + P - 1)/P - 1)(P * A_DTW - 1 downto 0) := (others => (others => '0'));
-        SCALE : positive := 2; -- 0 to 255
-        SCALE_SFT : positive := 1 -- Shift
+        SCALE : positive := 1; -- 0 to 255
+        SCALE_SFT : natural := 0 -- Shift
     );
     port (
         clk : in std_logic;

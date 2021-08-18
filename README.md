@@ -5,7 +5,7 @@ cnnの推論部分をVHDLで実装を行う。
 ### Base Python
 - ここのPython実装のMNISTの推論部分をVHDL化することが目標。
   - [FPGA で始めるエッジディープラーニング (2) | ACRi Blog](https://www.acri.c.titech.ac.jp/wordpress/archives/5786)
-- 上PythonではFloat実装なので論理実装しやすいように量子化(Quantize, int化)を行う。
+- 上PythonではFloat実装なので論理実装しやすいように[量子化(Quantize, int化)](#量子化)を行う。
 - 大きく分けて4ブロック。
   - 全結合層
   - 畳み込み層
@@ -16,22 +16,25 @@ cnnの推論部分をVHDLで実装を行う。
 
 ### 量子化
 RTLで扱いやすいように、Pythonでは量子化を行ったもので学習と推論を行う。  
-(量子化前と比べ、正答率は多少落ちた)  
 
+#### 参考リンク
 - [How to Quantize an MNIST network to 8 bits in Pytorch from scratch (No retraining required). | by Karanbir Chahal | Medium](https://karanbirchahal.medium.com/how-to-quantise-an-mnist-network-to-8-bits-in-pytorch-no-retraining-required-from-scratch-39f634ac8459)
   - [quantisation.ipynb - Colaboratory](https://colab.research.google.com/drive/1oDfcLRz2AIgsclkXJHj-5wMvbylr4Nxz#scrollTo=M5xNLrchrI6u)
 
 - [(beta) Static Quantization with Eager Mode in PyTorch — PyTorch Tutorials 1.9.0+cu102 documentation](https://pytorch.org/tutorials/advanced/static_quantization_tutorial.html)
 
 ### I/F
-- [組み込み屋の為のVerilog入門 その5 VALID&READYのハンドシェーク: Ryuzのブログ](http://ryuz.txt-nifty.com/blog/2012/09/verilog-s-c79f.html)
+Valid/Ready + Data  
+#### 参考リンク
+  - [組み込み屋の為のVerilog入門 その5 VALID&READYのハンドシェーク: Ryuzのブログ](http://ryuz.txt-nifty.com/blog/2012/09/verilog-s-c79f.html)
 
 ### 他
+- 自作のライブラリvhdl_libを使用。
+  - 主にnumeric_lib, Simではstr_lib.
 - 色々できるように、パラメタライズしておく。
 - Weight等のパラメータは、トップ階層からgenericで渡す。
 - 1次元配列のみ使用。  
   - 2次元配列は、1次元配列を配列サイズから疑似2次元として扱う。
-- 自作のライブラリvhdl_libを使用。
 
 ## 実行環境
 ### RTL側
@@ -46,11 +49,11 @@ RTLで扱いやすいように、Pythonでは量子化を行ったもので学�
 - Run: `py/q/cnn_predict_q.py`
 
 ## working
-- 全結合層(Linear)  
+- [全結合層(Linear)](#全結合層linear)  
   - 実装・検証完了  
   - RTL: src/piping_linear.vhd  
   - TB: test/piping_linear_tb*.vhd  
-- 畳み込み層(Conv2d)  
+- [畳み込み層(Conv2d)](#畳み込み層conv2d)  
   - 実装・検証完了  
   - RTL: src/piping_conv.vhd  
   - TB: test/piping_conv_tb*.vhd  
